@@ -20,7 +20,7 @@
     <div class="actions">
       <button id="btnMode" class="btn ghost">Tryb: 2 drużyny</button>
 
-      <label class="selectWrap" title="Poziom">
+      <label class="selectWrap" title="Poziom trudności zadań">
         <span>Poziom</span>
         <select id="difficulty">
           <option value="1">1</option>
@@ -28,6 +28,16 @@
           <option value="3" selected>3</option>
           <option value="4">4</option>
           <option value="5">5</option>
+        </select>
+      </label>
+
+      <label class="selectWrap" title="Szybkość robota (czas odpowiedzi)">
+        <span>CPU</span>
+        <select id="cpuSpeed">
+          <option value="very_slow">Bardzo wolny</option>
+          <option value="slow" selected>Wolny</option>
+          <option value="normal">Normalny</option>
+          <option value="fast">Szybki</option>
         </select>
       </label>
 
