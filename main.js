@@ -108,28 +108,32 @@ function genQuestion(diff){
   }
 }
 
-/* ---------- CPU speed profiles ---------- */
+/* ---------- CPU speed profiles (SLOWER) ---------- */
 function getCpuProfile() {
-  // bazowe czasy w ms (przed skalowaniem trudnością)
-  // "slow" jest default
+  // ZWOLNIONE czasy (ms) – dużo wolniej niż poprzednio
+  // Very slow: 4.5–10s
+  // Slow:      3.5–8s
+  // Normal:    2.5–6.5s
+  // Fast:      1.8–5s (wciąż nie super szybki)
   const map = {
-    very_slow: { min: 2500, max: 6500, correct: 0.76 },
-    slow:      { min: 2000, max: 5200, correct: 0.78 },
-    normal:    { min: 1400, max: 3800, correct: 0.80 },
-    fast:      { min: 900,  max: 2600, correct: 0.82 },
+    very_slow: { min: 4500, max: 10000, correct: 0.75, hardBonusDelay: 900 },
+    slow:      { min: 3500, max:  8000, correct: 0.78, hardBonusDelay: 700 },
+    normal:    { min: 2500, max:  6500, correct: 0.80, hardBonusDelay: 500 },
+    fast:      { min: 1800, max:  5000, correct: 0.82, hardBonusDelay: 350 },
   };
   return map[els.cpuSpeed?.value || 'slow'] || map.slow;
 }
 
-function scaleByDifficulty(diff, baseMin, baseMax, baseCorrect) {
-  // Im trudniej, tym trochę wolniej + minimalnie lepsza dokładność (ale nie perfekcyjna)
-  const timeFactor = [1.00, 1.00, 1.05, 1.10, 1.15, 1.20][diff] || 1.10;
+function scaleByDifficulty(diff, baseMin, baseMax, baseCorrect, extraDelay) {
+  // trudniej => trochę wolniej
+  const timeFactor = [1.00, 1.05, 1.10, 1.18, 1.26, 1.35][diff] || 1.18;
+  // trudniej => minimalnie lepsza dokładność, ale do 0.90 max
   const correctBonus = [0, 0.00, 0.01, 0.02, 0.03, 0.04][diff] || 0.02;
 
   return {
-    min: Math.round(baseMin * timeFactor),
-    max: Math.round(baseMax * timeFactor),
-    correct: Math.min(0.92, baseCorrect + correctBonus),
+    min: Math.round(baseMin * timeFactor + extraDelay),
+    max: Math.round(baseMax * timeFactor + extraDelay),
+    correct: Math.min(0.90, baseCorrect + correctBonus),
   };
 }
 
@@ -147,9 +151,18 @@ function scheduleAI(){
 
   const diff = difficulty();
   const prof = getCpuProfile();
-  const scaled = scaleByDifficulty(diff, prof.min, prof.max, prof.correct);
+
+  // Dodatkowy “namysł” dla trudniejszych poziomów (żeby nigdy nie było zbyt szybko)
+  const extraDelay = prof.hardBonusDelay * (diff >= 4 ? 1 : 0);
+
+  const scaled = scaleByDifficulty(diff, prof.min, prof.max, prof.correct, extraDelay);
 
   const delay = Math.floor(Math.random()*(scaled.max - scaled.min + 1)) + scaled.min;
+
+  // Pokaż "…" żeby dzieci widziały że CPU myśli
+  state.inputB = '';
+  render();
+  setStatus(state.mode === 'cpu' ? '🤖 Komputer myśli…' : 'Wpisz wynik i kliknij OK.');
 
   state.aiTimer = setTimeout(() => {
     state.aiTimer = null;
@@ -189,6 +202,7 @@ function nextQuestion(){
   state.inputA = '';
   state.inputB = '';
   state.locked = false;
+
   setStatus('Wpisz wynik i kliknij OK.');
   render();
   scheduleAI();
@@ -237,7 +251,7 @@ function submit(team, fromCpu=false){
   setTimeout(() => {
     state.locked = false;
     if(!state.ended) nextQuestion();
-  }, correct ? 350 : 550);
+  }, correct ? 350 : 650);
 }
 
 function endGame(winner){
@@ -344,9 +358,8 @@ els.btnMode.addEventListener('pointerdown', (e)=>{
 
 els.difficulty.addEventListener('change', ()=> resetGame());
 
-// ZMIANA: przy zmianie CPU speed od razu wpływa na następne pytanie (i reschedule)
+// ZMIANA: zmiana prędkości CPU od razu wpływa na kolejne "myślenie"
 els.cpuSpeed.addEventListener('change', () => {
-  // tylko ma sens w CPU mode, ale można zmieniać zawsze
   scheduleAI();
 });
 
@@ -362,3 +375,4 @@ setViewportVars();
 state.mode = 'teams';
 applyModeUI();
 resetGame();
+render();
