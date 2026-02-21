@@ -1,381 +1,154 @@
 :root{
-  --bg: #0b1220;
-  --panel: #121c31;
-  --panel2: #0f182b;
-  --text: #e7eefc;
-  --muted: #9db0d4;
-  --accent: #5aa7ff;
-  --good: #35d07f;
-  --bad: #ff5a5a;
-  --warn: #ffcc66;
-  --border: rgba(255,255,255,.12);
-
-  --gap: 12px;
-  --radius: 16px;
-
-  /* JS ustawia --vh dla mobile fullscreen */
   --vh: 1vh;
+  --topbar-h: 60px;
 }
 
-*{ box-sizing:border-box; }
-html,body{ height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
-body{ overflow:hidden; }
-button { -webkit-tap-highlight-color: transparent; }
+*{box-sizing:border-box}
+html,body{
+  margin:0;
+  height:100%;
+  font-family:system-ui;
+  background:#0b1220;
+  color:white;
+}
 
 #app{
   height:100%;
   display:flex;
   flex-direction:column;
-  min-height: 0;
 }
+
+/* TOPBAR */
 
 .topbar{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:12px 16px;
-  border-bottom:1px solid var(--border);
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 16px;
+  background:#111c33;
 }
 
-.brand .title{ font-size:18px; font-weight:800; letter-spacing:.2px; }
-.brand .subtitle{ font-size:12px; color: var(--muted); margin-top:2px; }
-.top-actions{ display:flex; gap:10px; }
+.actions{
+  display:flex;
+  gap:8px;
+}
+
+.btn{
+  padding:8px 12px;
+  border-radius:10px;
+  border:1px solid #355;
+  background:#223;
+  color:white;
+  font-weight:bold;
+}
+
+.btn.ghost{background:#1a253f;}
+.btn.danger{background:#402;}
+
+/* LAYOUT */
 
 .layout{
   flex:1;
   display:grid;
-  grid-template-columns: 1fr 1.8fr 1fr;
-  gap: var(--gap);
-  padding: var(--gap);
-  min-height: 0;
+  grid-template-columns:1fr 1.5fr 1fr;
+  gap:12px;
+  padding:12px;
+
+  height:calc((var(--vh)*100) - var(--topbar-h));
 }
 
-.team, .arena{
-  background: var(--panel);
-  border:1px solid var(--border);
-  border-radius: var(--radius);
-  padding:14px;
+/* ARENA */
+
+.arena{
+  background:#111c33;
+  border-radius:16px;
+  padding:16px;
   display:flex;
   flex-direction:column;
-  min-width: 0;
-  user-select:none;
-}
-
-.team.disabled{
-  opacity: .65;
-}
-.team.disabled .key{
-  pointer-events: none;
-}
-
-.badge{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  font-size:11px;
-  font-weight:900;
-  margin-left:8px;
-  padding:2px 8px;
-  border-radius:999px;
-  background: rgba(90,167,255,.18);
-  border: 1px solid rgba(90,167,255,.35);
-}
-.hidden{ display:none; }
-
-.team-header{ display:flex; align-items:flex-end; justify-content:space-between; gap:10px; }
-.team-name{ font-size:20px; font-weight:900; }
-.team-meta{ display:flex; gap:12px; color: var(--muted); font-size:12px; flex-wrap:wrap; }
-
-.input-box{
-  margin-top:12px;
-  background: var(--panel2);
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:10px;
-}
-.input-label{ font-size:12px; color: var(--muted); }
-.display{
-  height:56px;
-  display:flex; align-items:center; justify-content:center;
-  font-size:36px; font-weight:900;
-  letter-spacing: 3px;
-}
-
-.keypad{
-  margin-top:12px;
-  display:grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap:10px;
-  flex:1;
-  min-height: 0;
-}
-
-.key{
-  background: rgba(255,255,255,.06);
-  border:1px solid var(--border);
-  border-radius:16px;
-  font-size:28px;
-  font-weight:900;
-  color: var(--text);
-  display:flex; align-items:center; justify-content:center;
-  height:100%;
-  min-height: 72px;
-  touch-action: manipulation;
-  user-select:none;
-}
-.key:active{ transform: scale(.98); }
-
-.key.ok{ background: rgba(53,208,127,.18); border-color: rgba(53,208,127,.35); }
-.key.back{ background: rgba(255,204,102,.14); border-color: rgba(255,204,102,.35); }
-
-.hint{ margin-top:10px; color: var(--muted); font-size:12px; line-height:1.25; }
-.hint .small{ opacity:.9; }
-
-.arena{ position:relative; min-width: 0; }
-
-.question-card{
-  background: var(--panel2);
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:12px;
-}
-
-.q-top{
-  display:flex; align-items:center; justify-content:space-between;
-  gap:10px; flex-wrap:wrap;
-  color: var(--muted);
-  font-size:12px;
-}
-.level select, .mode select{
-  background: rgba(255,255,255,.06);
-  color: var(--text);
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:6px 8px;
-  font-weight:700;
 }
 
 .question{
-  margin-top:10px;
-  font-size:46px;
-  font-weight:1000;
+  font-size:42px;
   text-align:center;
-  letter-spacing:1px;
-}
-
-.q-actions{
-  display:flex; align-items:center; justify-content:space-between;
-  gap:10px; margin-top:10px;
-}
-.status{ font-size:12px; color: var(--muted); }
-
-.btn{
-  background: rgba(90,167,255,.18);
-  color: var(--text);
-  border:1px solid rgba(90,167,255,.35);
-  border-radius:14px;
-  padding:10px 12px;
   font-weight:900;
-  font-size:14px;
-  touch-action: manipulation;
-  user-select:none;
 }
-.btn:active{ transform: scale(.98); }
-.btn.ghost{ background: rgba(255,255,255,.06); border-color: var(--border); }
-.btn.danger{ background: rgba(255,90,90,.16); border-color: rgba(255,90,90,.35); }
-.btn.big{ font-size:18px; padding:14px 16px; border-radius:16px; }
 
-.rope-area{ margin-top:14px; flex:1; display:flex; flex-direction:column; min-height: 0; }
-.rope-title{ font-weight:900; color: var(--muted); margin-bottom:8px; }
-
-.rope-track{
-  position:relative;
+.ropeTrack{
   flex:1;
-  min-height: 220px;
+  margin-top:20px;
+  position:relative;
+  background:#0e172a;
   border-radius:16px;
-  border:1px solid var(--border);
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
-  overflow:hidden;
 }
 
-.center-line{
-  position:absolute; left:50%; top:0; bottom:0;
-  width:4px; transform: translateX(-2px);
-  background: rgba(255,255,255,.12);
+.centerLine{
+  position:absolute;
+  left:50%;
+  top:0;
+  bottom:0;
+  width:4px;
+  background:#345;
 }
-
-.win-line{
-  position:absolute; top:0; bottom:0;
-  width:6px;
-  opacity:.35;
-}
-.win-line.left{ left:6%; background: rgba(53,208,127,.5); }
-.win-line.right{ right:6%; background: rgba(53,208,127,.5); }
 
 .rope{
   position:absolute;
   top:50%;
   left:50%;
-  transform: translate(-50%,-50%);
-  width: 70%;
-  height: 12px;
-  border-radius: 999px;
-  background: rgba(231,238,252,.75);
-  box-shadow: 0 10px 24px rgba(0,0,0,.35);
-}
-.rope .flag{
-  position:absolute;
-  top:-38px;
-  left:50%;
-  transform: translateX(-50%);
-  font-size:32px;
-  filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+  width:60%;
+  height:12px;
+  transform:translate(-50%,-50%);
+  background:white;
+  border-radius:999px;
 }
 
-.rope-meta{ margin-top:10px; color: var(--muted); font-size:12px; line-height:1.25; }
-.small{ font-size:12px; color: var(--muted); }
+/* TEAM */
 
-.winner{
-  position:absolute; inset:0;
-  display:flex; align-items:center; justify-content:center;
-  background: rgba(0,0,0,.55);
-  backdrop-filter: blur(3px);
+.team{
+  background:#111c33;
+  border-radius:16px;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
 }
-.winner-card{
-  width:min(520px, 92%);
-  background: var(--panel2);
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:18px;
+
+.team.disabled{
+  opacity:0.5;
+  pointer-events:none;
+}
+
+.display{
+  font-size:36px;
   text-align:center;
-}
-.winner-text{
-  font-size:34px;
-  font-weight:1000;
-  margin-bottom:14px;
+  margin:10px 0;
 }
 
-/* ============================
-   Mobile portrait / small
-   ============================ */
-@media (max-width: 900px) {
-  body { overflow: auto; }
-  #app { height: auto; min-height: 100%; }
+.keypad{
+  flex:1;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  grid-template-rows:repeat(4,1fr);
+  gap:8px;
+}
 
-  .topbar{
-    position: sticky;
-    top: 0;
-    z-index: 5;
-  }
+.key{
+  font-size:24px;
+  border-radius:12px;
+  border:none;
+  background:#223;
+  color:white;
+  font-weight:bold;
+}
 
-  .brand .title { font-size: 16px; }
-  .brand .subtitle { display:none; }
+/* MOBILE LANDSCAPE */
+
+@media (max-width:900px) and (orientation:landscape){
 
   .layout{
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto 1fr;
   }
 
-  .arena { order: 1; }
-  .team-left { order: 2; }
-  .team-right { order: 3; }
-
-  .question { font-size: 34px; }
-  .rope-track { min-height: 160px; }
-  .display { height: 52px; font-size: 34px; }
-  .key { min-height: 64px; font-size: 26px; border-radius: 14px; }
-
-  .q-actions{
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .btn { width: 100%; font-size: 16px; padding: 12px 12px; }
-}
-
-/* ============================
-   Phone LANDSCAPE:
-   Arena top, teams bottom side-by-side
-   + always show whole keypad (4 rows)
-   + stable height via --vh (visualViewport)
-   ============================ */
-@media (max-width: 900px) and (orientation: landscape) {
-  body { overflow: hidden; }
-
-  /* JS ustawia --vh, więc mamy realne 100% ekranu */
-  #app{
-    height: calc(var(--vh) * 100);
-  }
-
-  .topbar{
-    padding-top: calc(6px + env(safe-area-inset-top));
-    padding-bottom: 6px;
-    padding-left: calc(10px + env(safe-area-inset-left));
-    padding-right: calc(10px + env(safe-area-inset-right));
-  }
-  .brand .subtitle { display:none; }
-
-  .layout{
-    /* 2 kolumny, 2 wiersze */
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto 1fr;
-    gap: 8px;
-    padding: 8px;
-    min-height: 0;
-  }
-
-  .arena{ grid-column: 1 / span 2; grid-row: 1; padding: 8px; }
-  .team-left{ grid-column: 1; grid-row: 2; }
-  .team-right{ grid-column: 2; grid-row: 2; }
-
-  /* Compact arena */
-  .question-card{ padding: 8px; }
-  .q-top{ font-size: 11px; }
-  .question{ margin-top: 4px; font-size: 24px; }
-  .q-actions{ margin-top: 6px; }
-  .status{ display:none; }
-  .rope-area{ margin-top: 8px; }
-  .rope-track{ min-height: 86px; }
-  .rope-meta{ display:none; }
-
-  /* Team panels: header + input + keypad (rest) */
-  .team{
-    padding: 8px;
-    min-height: 0;
-    display: grid;
-    grid-template-rows: auto auto 1fr;
-    gap: 6px;
-    overflow: hidden;
-  }
-
-  .team-name{ font-size: 15px; }
-  .team-meta{ gap: 6px; font-size: 10px; }
-
-  .input-box{ margin-top: 0; padding: 6px; }
-  .display{ height: 36px; font-size: 22px; letter-spacing: 2px; }
-
-  /* 4 rzędy po równo => nie utnie BACK/0/OK */
-  .keypad{
-    margin-top: 0;
-    gap: 6px;
-    min-height: 0;
-    height: 100%;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(4, 1fr);
-  }
-
-  .key{
-    min-height: 0 !important;
-    height: 100%;
-    font-size: 18px;
-    border-radius: 10px;
-    padding: 0;
-  }
-
-  .hint{ display:none; }
-
-  .btn{
-    padding: 8px 10px;
-    font-size: 13px;
-    border-radius: 12px;
+  .arena{
+    grid-column:1 / span 2;
   }
 }
