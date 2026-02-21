@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Przeciąganie liny – Matematyka</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="title">Przeciąganie liny – Matematyka</div>
+        <div class="subtitle">TV dotykowy • 2 drużyny • szybkość = siła</div>
+      </div>
+
+      <div class="top-actions">
+        <button id="btnFullscreen" class="btn ghost">Pełny ekran</button>
+        <button id="btnReset" class="btn danger">Reset</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- LEFT TEAM -->
+      <section class="team team-left" aria-label="Drużyna A">
+        <div class="team-header">
+          <div class="team-name">Drużyna A</div>
+          <div class="team-meta">
+            <span>Kombo: <strong id="comboA">0</strong></span>
+            <span>Ruch: <strong id="lastMoveA">0</strong></span>
+          </div>
+        </div>
+
+        <div class="input-box">
+          <div class="input-label">Wynik</div>
+          <div id="displayA" class="display" role="textbox" aria-label="Wpis drużyny A"></div>
+        </div>
+
+        <div class="keypad" id="keypadA" aria-label="Klawiatura drużyny A"></div>
+
+        <div class="hint">
+          <div>Dotknij cyfr, potem <strong>OK</strong>.</div>
+          <div class="small">⌫ usuwa ostatnią cyfrę</div>
+        </div>
+      </section>
+
+      <!-- ARENA -->
+      <section class="arena" aria-label="Arena">
+        <div class="question-card">
+          <div class="q-top">
+            <div class="level">
+              Poziom:
+              <select id="difficulty">
+                <option value="1">1 (łatwy)</option>
+                <option value="2">2</option>
+                <option value="3" selected>3 (średni)</option>
+                <option value="4">4</option>
+                <option value="5">5 (trudny)</option>
+              </select>
+            </div>
+
+            <div class="timer">
+              Czas: <strong id="timeLeft">10.0</strong>s
+            </div>
+          </div>
+
+          <div class="question">
+            <span id="questionText">—</span>
+          </div>
+
+          <div class="q-actions">
+            <button id="btnNext" class="btn">Nowe pytanie</button>
+            <div id="status" class="status">Dotknij OK po wpisaniu wyniku.</div>
+          </div>
+        </div>
+
+        <div class="rope-area">
+          <div class="rope-title">Lina</div>
+
+          <div class="rope-track" aria-label="Stan liny">
+            <div class="center-line" title="Środek"></div>
+
+            <div id="rope" class="rope">
+              <div class="flag">🏳️</div>
+            </div>
+
+            <div class="win-line left" title="Wygrana A"></div>
+            <div class="win-line right" title="Wygrana B"></div>
+          </div>
+
+          <div class="rope-meta">
+            <div>Pozycja: <strong id="ropePos">0</strong> (A ←  -100 … +100  → B)</div>
+            <div class="small">Poprawna odpowiedź przesuwa linę. Szybciej = większy ruch.</div>
+          </div>
+        </div>
+
+        <div id="winnerOverlay" class="winner hidden" aria-hidden="true">
+          <div class="winner-card">
+            <div id="winnerText" class="winner-text">Wygrywa —</div>
+            <button id="btnPlayAgain" class="btn big">Graj dalej</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT TEAM -->
+      <section class="team team-right" aria-label="Drużyna B">
+        <div class="team-header">
+          <div class="team-name">Drużyna B</div>
+          <div class="team-meta">
+            <span>Kombo: <strong id="comboB">0</strong></span>
+            <span>Ruch: <strong id="lastMoveB">0</strong></span>
+          </div>
+        </div>
+
+        <div class="input-box">
+          <div class="input-label">Wynik</div>
+          <div id="displayB" class="display" role="textbox" aria-label="Wpis drużyny B"></div>
+        </div>
+
+        <div class="keypad" id="keypadB" aria-label="Klawiatura drużyny B"></div>
+
+        <div class="hint">
+          <div>Dotknij cyfr, potem <strong>OK</strong>.</div>
+          <div class="small">⌫ usuwa ostatnią cyfrę</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
