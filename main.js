@@ -1,5 +1,7 @@
 // ============================
-// Tug-of-War Math Game (MVP) + Fullscreen Auto-Fit
+// Tug-of-War Math Game (MVP)
+// + Mobile fullscreen scaling fix (vh via visualViewport)
+// + Mode: Teams OR vs CPU (computer as Team B)
 // ============================
 
 const els = {
@@ -7,30 +9,31 @@ const els = {
   displayB: document.getElementById('displayB'),
   keypadA: document.getElementById('keypadA'),
   keypadB: document.getElementById('keypadB'),
+  teamB: document.getElementById('teamB'),
+  cpuBadge: document.getElementById('cpuBadge'),
+
   questionText: document.getElementById('questionText'),
   timeLeft: document.getElementById('timeLeft'),
   rope: document.getElementById('rope'),
   ropePos: document.getElementById('ropePos'),
   status: document.getElementById('status'),
+
   difficulty: document.getElementById('difficulty'),
+  gameMode: document.getElementById('gameMode'),
+
   btnNext: document.getElementById('btnNext'),
   btnReset: document.getElementById('btnReset'),
   btnFullscreen: document.getElementById('btnFullscreen'),
+
   overlay: document.getElementById('winnerOverlay'),
   winnerText: document.getElementById('winnerText'),
   btnPlayAgain: document.getElementById('btnPlayAgain'),
+
   comboA: document.getElementById('comboA'),
   comboB: document.getElementById('comboB'),
   lastMoveA: document.getElementById('lastMoveA'),
   lastMoveB: document.getElementById('lastMoveB'),
 };
-
-const stage = document.getElementById('fsStage');
-
-// Design size for "fit to screen" mode.
-// Pick a stable 16:9 baseline that works well on TVs.
-const DESIGN_W = 1920;
-const DESIGN_H = 1080;
 
 const state = {
   ropePos: 0,        // -100 ... +100
@@ -44,6 +47,10 @@ const state = {
   timerId: null,
   locked: false,
   ended: false,
+
+  mode: 'teams',     // 'teams' | 'cpu'
+  aiTimeoutId: null,
+  aiThinking: false,
 };
 
 function clamp(n, min, max) {
@@ -61,7 +68,7 @@ function setStatus(msg, kind = 'muted') {
 
 function render() {
   els.displayA.textContent = state.inputA || '—';
-  els.displayB.textContent = state.inputB || '—';
+  els.displayB.textContent = state.inputB || (state.mode === 'cpu' ? (state.aiThinking ? '…' : '—') : '—');
 
   els.ropePos.textContent = Math.round(state.ropePos).toString();
   els.comboA.textContent = state.comboA.toString();
@@ -74,72 +81,6 @@ function render() {
   els.timeLeft.textContent = state.timeLeft.toFixed(1);
 }
 
-// ----------------------------
-// Fullscreen auto-fit (contain)
-// ----------------------------
-function getViewportSize() {
-  // visualViewport is more accurate on mobile (esp. Samsung / landscape)
-  const vv = window.visualViewport;
-  const w = vv ? vv.width : window.innerWidth;
-  const h = vv ? vv.height : window.innerHeight;
-  return { w, h };
-}
-
-function applyFitScale() {
-  if (!stage.classList.contains('fit')) return;
-
-  const { w, h } = getViewportSize();
-
-  const scale = Math.min(w / DESIGN_W, h / DESIGN_H);
-  const scaledW = DESIGN_W * scale;
-  const scaledH = DESIGN_H * scale;
-
-  const x = Math.max(0, (w - scaledW) / 2);
-  const y = Math.max(0, (h - scaledH) / 2);
-
-  stage.style.setProperty('--design-w', `${DESIGN_W}px`);
-  stage.style.setProperty('--design-h', `${DESIGN_H}px`);
-  stage.style.setProperty('--fit-scale', `${scale}`);
-  stage.style.setProperty('--fit-x', `${x}px`);
-  stage.style.setProperty('--fit-y', `${y}px`);
-}
-
-async function toggleFullscreen() {
-  try {
-    if (!document.fullscreenElement) {
-      await stage.requestFullscreen();
-      stage.classList.add('fit');
-      // Apply after fullscreen settles
-      setTimeout(applyFitScale, 50);
-    } else {
-      await document.exitFullscreen();
-      stage.classList.remove('fit');
-      stage.style.removeProperty('--fit-scale');
-      stage.style.removeProperty('--fit-x');
-      stage.style.removeProperty('--fit-y');
-    }
-  } catch {
-    setStatus('Nie udało się włączyć pełnego ekranu (polityka przeglądarki).', 'warn');
-  }
-}
-
-document.addEventListener('fullscreenchange', () => {
-  if (!document.fullscreenElement) {
-    stage.classList.remove('fit');
-  } else {
-    stage.classList.add('fit');
-  }
-  setTimeout(applyFitScale, 50);
-});
-
-window.addEventListener('resize', applyFitScale);
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', applyFitScale);
-}
-
-// ----------------------------
-// Keypads
-// ----------------------------
 function buildKeypad(container, team) {
   const keys = [
     '1','2','3',
@@ -171,6 +112,9 @@ function onKey(team, key) {
   if (state.ended) return;
   if (state.locked) return;
 
+  // If CPU mode, block B input
+  if (state.mode === 'cpu' && team === 'B') return;
+
   const isA = team === 'A';
   let buf = isA ? state.inputA : state.inputB;
 
@@ -189,9 +133,6 @@ function onKey(team, key) {
   render();
 }
 
-// ----------------------------
-// Timer & Questions
-// ----------------------------
 function startTimer() {
   stopTimer();
   state.timeLeft = state.roundSeconds;
@@ -220,6 +161,14 @@ function stopTimer() {
     clearInterval(state.timerId);
     state.timerId = null;
   }
+}
+
+function clearAI() {
+  if (state.aiTimeoutId) {
+    clearTimeout(state.aiTimeoutId);
+    state.aiTimeoutId = null;
+  }
+  state.aiThinking = false;
 }
 
 function difficultyValue() {
@@ -287,6 +236,62 @@ function genQuestion(diff) {
   }
 }
 
+function bonusBySpeed(timeLeft, roundSeconds) {
+  const elapsed = roundSeconds - timeLeft;
+  if (elapsed < 2) return 6;
+  if (elapsed < 4) return 4;
+  if (elapsed < 6) return 2;
+  return 0;
+}
+
+function scheduleCPUAnswer() {
+  clearAI();
+  if (state.mode !== 'cpu' || state.ended) return;
+
+  state.aiThinking = true;
+  render();
+
+  const diff = difficultyValue();
+
+  // CPU speed tuned to be "fun but beatable"
+  // lower diff -> slower + more mistakes, higher diff -> a bit slower again
+  const baseMin = [0, 1.4, 1.6, 1.8, 2.0, 2.2][diff];
+  const baseMax = [0, 4.8, 4.6, 4.4, 4.6, 4.8][diff];
+  const delay = (Math.random() * (baseMax - baseMin) + baseMin) * 1000;
+
+  // correctness chance (not perfect!)
+  const correctChance = [0, 0.70, 0.72, 0.75, 0.78, 0.80][diff];
+
+  state.aiTimeoutId = setTimeout(() => {
+    state.aiTimeoutId = null;
+    if (state.ended) return;
+
+    const willBeCorrect = Math.random() < correctChance;
+
+    // if time is already 0, let normal timer handle next question
+    if (state.timeLeft <= 0.05) {
+      state.aiThinking = false;
+      render();
+      return;
+    }
+
+    if (willBeCorrect) {
+      // CPU "submits" correct answer
+      state.inputB = String(state.question.answer);
+      state.aiThinking = false;
+      render();
+      submit('B', true);
+    } else {
+      // wrong: show wrong number and "submit" (no move)
+      const wrong = state.question.answer + (Math.random() < 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
+      state.inputB = String(wrong);
+      state.aiThinking = false;
+      render();
+      submit('B', true);
+    }
+  }, delay);
+}
+
 function nextQuestion() {
   state.question = genQuestion(difficultyValue());
   els.questionText.textContent = state.question.text;
@@ -296,32 +301,33 @@ function nextQuestion() {
   state.locked = false;
 
   startTimer();
+
+  // In CPU mode schedule AI attempt each question
+  scheduleCPUAnswer();
+
   render();
 }
 
-function bonusBySpeed(timeLeft, roundSeconds) {
-  const elapsed = roundSeconds - timeLeft;
-  if (elapsed < 2) return 6;
-  if (elapsed < 4) return 4;
-  if (elapsed < 6) return 2;
-  return 0;
-}
-
-function submit(team) {
+function submit(team, isCpuSubmit = false) {
   if (state.ended) return;
   if (state.locked) return;
+
+  // If human A submits, cancel CPU for this question to avoid double
+  if (state.mode === 'cpu' && team === 'A') {
+    clearAI();
+  }
 
   const isA = team === 'A';
   const buf = isA ? state.inputA : state.inputB;
 
   if (!buf) {
-    setStatus('Najpierw wpisz wynik.', 'warn');
+    if (!isCpuSubmit) setStatus('Najpierw wpisz wynik.', 'warn');
     return;
   }
 
   const value = Number(buf);
   if (!Number.isFinite(value)) {
-    setStatus('To nie jest liczba.', 'bad');
+    if (!isCpuSubmit) setStatus('To nie jest liczba.', 'bad');
     return;
   }
 
@@ -348,7 +354,8 @@ function submit(team) {
     state.ropePos += isA ? -move : +move;
     state.ropePos = clamp(state.ropePos, -100, 100);
 
-    setStatus(`✅ Dobrze! Ruch: ${move} (bonus: ${bonus})`, 'good');
+    if (isCpuSubmit) setStatus(`🤖 CPU: ✅ dobrze! Ruch: ${move}`, 'good');
+    else setStatus(`✅ Dobrze! Ruch: ${move} (bonus: ${bonus})`, 'good');
   } else {
     if (isA) {
       state.comboA = 0;
@@ -357,13 +364,15 @@ function submit(team) {
       state.comboB = 0;
       els.lastMoveB.textContent = `0`;
     }
-    setStatus(`❌ Źle. Poprawna odpowiedź to ${state.question.answer}.`, 'bad');
+
+    if (isCpuSubmit) setStatus(`🤖 CPU: ❌ źle`, 'bad');
+    else setStatus(`❌ Źle. Poprawna odpowiedź to ${state.question.answer}.`, 'bad');
   }
 
   render();
 
   if (state.ropePos <= -100) return endGame('Drużyna A');
-  if (state.ropePos >= 100) return endGame('Drużyna B');
+  if (state.ropePos >= 100) return endGame(state.mode === 'cpu' ? 'Komputer (Drużyna B)' : 'Drużyna B');
 
   setTimeout(() => {
     state.locked = false;
@@ -374,6 +383,7 @@ function submit(team) {
 function endGame(winner) {
   state.ended = true;
   stopTimer();
+  clearAI();
   els.overlay.classList.remove('hidden');
   els.overlay.setAttribute('aria-hidden', 'false');
   els.winnerText.textContent = `Wygrywa ${winner}! 🎉`;
@@ -381,6 +391,8 @@ function endGame(winner) {
 
 function resetGame() {
   stopTimer();
+  clearAI();
+
   state.ropePos = 0;
   state.inputA = '';
   state.inputB = '';
@@ -395,12 +407,52 @@ function resetGame() {
   els.overlay.setAttribute('aria-hidden', 'true');
 
   setStatus('Dotknij OK po wpisaniu wyniku.', 'muted');
+  applyModeUI();
   nextQuestion();
+  render();
 }
 
-// ----------------------------
+function applyModeUI() {
+  state.mode = els.gameMode.value;
+
+  if (state.mode === 'cpu') {
+    els.teamB.classList.add('disabled');
+    els.cpuBadge.classList.remove('hidden');
+    // clear B input
+    state.inputB = '';
+    setStatus('Tryb CPU: Drużyna A gra przeciw komputerowi 🤖', 'warn');
+  } else {
+    els.teamB.classList.remove('disabled');
+    els.cpuBadge.classList.add('hidden');
+    setStatus('Tryb 2 drużyny: obie strony odpowiadają.', 'muted');
+  }
+  render();
+}
+
+/* ===== Fullscreen + proper mobile height (Samsung-safe) ===== */
+function setVhUnit() {
+  const vv = window.visualViewport;
+  const h = vv ? vv.height : window.innerHeight;
+  const vh = h * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+
+async function toggleFullscreen() {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
+  } catch {
+    setStatus('Nie udało się włączyć pełnego ekranu (polityka przeglądarki).', 'warn');
+  } finally {
+    // after entering/leaving fullscreen update vh
+    setTimeout(setVhUnit, 50);
+  }
+}
+
 // Wire up
-// ----------------------------
 buildKeypad(els.keypadA, 'A');
 buildKeypad(els.keypadB, 'B');
 
@@ -409,6 +461,30 @@ els.btnReset.addEventListener('pointerdown', (e) => { e.preventDefault(); resetG
 els.btnPlayAgain.addEventListener('pointerdown', (e) => { e.preventDefault(); resetGame(); });
 els.btnFullscreen.addEventListener('pointerdown', (e) => { e.preventDefault(); toggleFullscreen(); });
 
+els.gameMode.addEventListener('change', () => {
+  applyModeUI();
+  resetGame();
+});
+
+els.difficulty.addEventListener('change', () => {
+  resetGame();
+});
+
+document.addEventListener('fullscreenchange', () => {
+  setTimeout(setVhUnit, 50);
+});
+
+window.addEventListener('resize', () => {
+  setVhUnit();
+});
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => setVhUnit());
+  window.visualViewport.addEventListener('scroll', () => setVhUnit());
+}
+
 // Start
+setVhUnit();
+applyModeUI();
 resetGame();
 render();
