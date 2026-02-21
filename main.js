@@ -1,5 +1,4 @@
 const els = {
-  // top controls
   board: document.getElementById('board'),
   btnMode: document.getElementById('btnMode'),
   difficulty: document.getElementById('difficulty'),
@@ -7,28 +6,23 @@ const els = {
   btnFullscreen: document.getElementById('btnFullscreen'),
   btnReset: document.getElementById('btnReset'),
 
-  // arena
   question: document.getElementById('question'),
   status: document.getElementById('status'),
-  stage: document.getElementById('stage'),
   overlay: document.getElementById('winnerOverlay'),
   winnerText: document.getElementById('winnerText'),
   btnPlayAgain: document.getElementById('btnPlayAgain'),
 
-  // tug board
   boardTug: document.getElementById('boardTug'),
   boardEggs: document.getElementById('boardEggs'),
   rope: document.getElementById('rope'),
   ropePos: document.getElementById('ropePos'),
 
-  // eggs board
   hpA: document.getElementById('hpA'),
   hpB: document.getElementById('hpB'),
   eggField: document.querySelector('.eggField'),
   avatarA: document.getElementById('avatarA'),
   avatarB: document.getElementById('avatarB'),
 
-  // teams
   displayA: document.getElementById('displayA'),
   displayB: document.getElementById('displayB'),
   keypadA: document.getElementById('keypadA'),
@@ -53,12 +47,8 @@ const state = {
 
   aiTimer: null,
 
-  // tug
-  ropePos: 0, // -100..+100
-
-  // eggs
-  hpA: 5,
-  hpB: 5,
+  ropePos: 0, // tug
+  hpA: 5, hpB: 5, // eggs
 };
 
 function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
@@ -72,7 +62,7 @@ function setStatus(msg, kind='muted'){
     'var(--muted)';
 }
 
-/* ===== viewport sizing (Samsung-safe) ===== */
+/* viewport sizing (Samsung-safe) */
 function setViewportVars(){
   const vv = window.visualViewport;
   const h = vv ? vv.height : window.innerHeight;
@@ -83,7 +73,7 @@ function setViewportVars(){
   document.documentElement.style.setProperty('--topbar-h', tbH + 'px');
 }
 
-/* ===== questions ===== */
+/* questions */
 function difficulty(){
   return parseInt(els.difficulty.value, 10);
 }
@@ -117,7 +107,6 @@ function genQuestion(diff){
       return { text:`${a} ${op} ${b}`, answer: op==='+'?a+b:a-b };
     }
   }
-  // diff 5
   const roll = Math.random();
   if(roll < 0.45){
     const a=rnd(3,12), b=rnd(3,12);
@@ -133,7 +122,7 @@ function genQuestion(diff){
   }
 }
 
-/* ===== CPU speed (slower) ===== */
+/* CPU speed */
 function getCpuProfile() {
   const map = {
     very_slow: { min: 5200, max: 13000, correct: 0.75 },
@@ -160,7 +149,6 @@ function clearAI(){
     state.aiTimer = null;
   }
 }
-
 function scheduleAI(){
   clearAI();
   if(state.mode !== 'cpu' || state.ended) return;
@@ -169,7 +157,6 @@ function scheduleAI(){
   const prof = scaleByDifficulty(diff, getCpuProfile());
   const delay = Math.floor(Math.random()*(prof.max - prof.min + 1)) + prof.min;
 
-  // pokaż, że CPU myśli
   state.inputB = '';
   renderTeamDisplays();
   setStatus('🤖 Komputer myśli…', 'warn');
@@ -192,32 +179,25 @@ function scheduleAI(){
   }, delay);
 }
 
-/* ===== render ===== */
+/* render */
 function renderTeamDisplays(){
   els.displayA.textContent = state.inputA || '—';
   els.displayB.textContent = state.inputB || '—';
   els.comboA.textContent = String(state.comboA);
   els.comboB.textContent = String(state.comboB);
 }
-
 function renderTug(){
   els.ropePos.textContent = String(Math.round(state.ropePos));
-  const offsetPct = (state.ropePos / 100) * 40; // symetrycznie
+  const offsetPct = (state.ropePos / 100) * 40;
   els.rope.style.left = `calc(50% + ${offsetPct}%)`;
 }
-
-function hearts(n){
-  return '❤️'.repeat(Math.max(0,n));
-}
+function hearts(n){ return '❤️'.repeat(Math.max(0,n)); }
 function renderEggs(){
   els.hpA.textContent = hearts(state.hpA);
   els.hpB.textContent = hearts(state.hpB);
-
-  // zmiana buziek przy małym HP
   els.avatarA.textContent = state.hpA <= 2 ? '😵' : '🙂';
   els.avatarB.textContent = state.hpB <= 2 ? '😵' : '🙂';
 }
-
 function render(){
   els.question.textContent = state.question ? state.question.text : '—';
   renderTeamDisplays();
@@ -225,10 +205,9 @@ function render(){
   if(state.game === 'eggs') renderEggs();
 }
 
-/* ===== game switching ===== */
+/* switching */
 function applyGameUI(){
   state.game = els.board.value;
-
   if(state.game === 'tug'){
     els.boardTug.classList.remove('hidden');
     els.boardEggs.classList.add('hidden');
@@ -238,7 +217,7 @@ function applyGameUI(){
   }
 }
 
-/* ===== gameplay actions ===== */
+/* flow */
 function nextQuestion(){
   state.question = genQuestion(difficulty());
   state.inputA = '';
@@ -269,7 +248,6 @@ function tugOnCorrect(team){
 }
 
 function throwEgg(fromTeam){
-  // fromTeam 'A' throws to B, 'B' throws to A
   const field = els.eggField;
   const rect = field.getBoundingClientRect();
 
@@ -295,7 +273,6 @@ function throwEgg(fromTeam){
   anim.onfinish = () => {
     egg.remove();
 
-    // splash
     const splash = document.createElement('div');
     splash.className = 'splash';
     splash.textContent = '💥';
@@ -312,17 +289,13 @@ function throwEgg(fromTeam){
 }
 
 function eggsOnCorrect(team){
-  // correct answer => hit opponent
   if(team === 'A'){
     throwEgg('A');
-    state.hpB -= 1;
-    state.hpB = clamp(state.hpB, 0, 5);
+    state.hpB = clamp(state.hpB - 1, 0, 5);
   } else {
     throwEgg('B');
-    state.hpA -= 1;
-    state.hpA = clamp(state.hpA, 0, 5);
+    state.hpA = clamp(state.hpA - 1, 0, 5);
   }
-
   renderEggs();
 
   if(state.hpA <= 0) endGame(state.mode === 'cpu' ? 'Komputer (Drużyna B)' : 'Drużyna B');
@@ -331,8 +304,6 @@ function eggsOnCorrect(team){
 
 function submit(team, fromCpu=false){
   if(state.ended || state.locked) return;
-
-  // if A answers in cpu mode, cancel current AI
   if(state.mode === 'cpu' && team === 'A') clearAI();
 
   const value = Number(team === 'A' ? state.inputA : state.inputB);
@@ -342,7 +313,6 @@ function submit(team, fromCpu=false){
   }
 
   state.locked = true;
-
   const correct = value === state.question.answer;
 
   if(correct){
@@ -353,7 +323,6 @@ function submit(team, fromCpu=false){
 
     if(state.game === 'tug') tugOnCorrect(team);
     if(state.game === 'eggs') eggsOnCorrect(team);
-
   } else {
     if(team === 'A') state.comboA = 0;
     else state.comboB = 0;
@@ -378,10 +347,7 @@ function resetGame(){
   state.comboA = 0;
   state.comboB = 0;
 
-  // reset tug
   state.ropePos = 0;
-
-  // reset eggs
   state.hpA = 5;
   state.hpB = 5;
 
@@ -409,7 +375,7 @@ function applyModeUI(){
   scheduleAI();
 }
 
-/* ===== keypad ===== */
+/* keypad */
 function buildKeypad(container, team){
   const keys = ['1','2','3','4','5','6','7','8','9','⌫','0','OK'];
   container.innerHTML = '';
@@ -444,7 +410,7 @@ function buildKeypad(container, team){
   });
 }
 
-/* ===== fullscreen ===== */
+/* fullscreen */
 async function toggleFullscreen(){
   try{
     if(!document.fullscreenElement){
@@ -459,7 +425,7 @@ async function toggleFullscreen(){
   }
 }
 
-/* ===== wire up ===== */
+/* wire */
 buildKeypad(els.keypadA, 'A');
 buildKeypad(els.keypadB, 'B');
 
@@ -477,7 +443,6 @@ els.btnMode.addEventListener('pointerdown', (e)=>{
 
 els.difficulty.addEventListener('change', ()=> resetGame());
 els.cpuSpeed.addEventListener('change', ()=> scheduleAI());
-
 els.board.addEventListener('change', ()=> resetGame());
 
 document.addEventListener('fullscreenchange', ()=> setTimeout(setViewportVars, 50));
