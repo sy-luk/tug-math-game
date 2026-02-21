@@ -19,8 +19,36 @@ html,body{ height:100%; margin:0; font-family: system-ui, -apple-system, Segoe U
 body{ overflow:hidden; }
 button { -webkit-tap-highlight-color: transparent; }
 
-#app{ height:100%; display:flex; flex-direction:column; min-height: 0; }
+/* ===== Fullscreen stage wrapper ===== */
+#fsStage{
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden; /* ensure nothing gets clipped outside */
+}
 
+/* Normal mode */
+#app{
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  min-height: 0;
+  transform: none;
+}
+
+/* Fit mode (activated only in fullscreen) */
+#fsStage.fit #app{
+  position:absolute;
+  left:0;
+  top:0;
+  width: var(--design-w, 1920px);
+  height: var(--design-h, 1080px);
+  transform: translate(var(--fit-x, 0px), var(--fit-y, 0px)) scale(var(--fit-scale, 1));
+  transform-origin: top left;
+}
+
+/* ===== UI ===== */
 .topbar{
   display:flex; align-items:center; justify-content:space-between;
   padding:12px 16px;
@@ -30,7 +58,6 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .brand .title{ font-size:18px; font-weight:800; letter-spacing:.2px; }
 .brand .subtitle{ font-size:12px; color: var(--muted); margin-top:2px; }
-
 .top-actions{ display:flex; gap:10px; }
 
 .layout{
@@ -39,7 +66,6 @@ button { -webkit-tap-highlight-color: transparent; }
   grid-template-columns: 1fr 1.8fr 1fr;
   gap: var(--gap);
   padding: var(--gap);
-  height: calc(100% - 60px);
   min-height: 0;
 }
 
@@ -97,17 +123,13 @@ button { -webkit-tap-highlight-color: transparent; }
   user-select:none;
 }
 .key:active{ transform: scale(.98); }
-
 .key.ok{ background: rgba(53,208,127,.18); border-color: rgba(53,208,127,.35); }
 .key.back{ background: rgba(255,204,102,.14); border-color: rgba(255,204,102,.35); }
 
 .hint{ margin-top:10px; color: var(--muted); font-size:12px; line-height:1.25; }
 .hint .small{ opacity:.9; }
 
-.arena{
-  position:relative;
-  min-width: 0;
-}
+.arena{ position:relative; min-width: 0; }
 
 .question-card{
   background: var(--panel2);
@@ -235,6 +257,7 @@ button { -webkit-tap-highlight-color: transparent; }
 
 /* ============================
    Mobile portrait / small
+   (works in normal mode; fullscreen uses FIT)
    ============================ */
 @media (max-width: 900px) {
   body { overflow: auto; }
@@ -250,7 +273,6 @@ button { -webkit-tap-highlight-color: transparent; }
   .brand .subtitle { display:none; }
 
   .layout{
-    height:auto;
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto;
   }
@@ -269,105 +291,4 @@ button { -webkit-tap-highlight-color: transparent; }
     align-items: stretch;
   }
   .btn { width: 100%; font-size: 16px; padding: 12px 12px; }
-}
-
-/* ============================
-   Phone LANDSCAPE (fixed):
-   Arena on top, teams bottom side-by-side,
-   keypads always fully visible (4x3 grid rows).
-   ============================ */
-@media (max-width: 900px) and (orientation: landscape) {
-  body { overflow: hidden; }
-  #app { height: 100%; }
-
-  .topbar{
-    padding: 8px 12px;
-  }
-  .brand .subtitle { display:none; }
-
-  .layout{
-    height: calc(100dvh - 52px);
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto 1fr;
-    gap: 8px;
-    padding: 8px;
-    min-height: 0;
-  }
-
-  .arena{
-    grid-column: 1 / span 2;
-    grid-row: 1;
-    padding: 8px;
-  }
-
-  .team-left{ grid-column: 1; grid-row: 2; }
-  .team-right{ grid-column: 2; grid-row: 2; }
-
-  /* Compact arena */
-  .question-card{ padding: 8px; }
-  .q-top{ font-size: 11px; }
-  .question{ margin-top: 4px; font-size: 24px; }
-  .q-actions{ margin-top: 6px; }
-  .status{ display:none; }
-  .rope-area{ margin-top: 8px; }
-  .rope-track{ min-height: 92px; }
-  .rope-meta{ display:none; }
-
-  /* Team panels become a 3-row grid: header, input, keypad */
-  .team{
-    padding: 8px;
-    min-height: 0;
-    display: grid;
-    grid-template-rows: auto auto 1fr;
-    gap: 6px;
-    overflow: hidden;
-  }
-
-  .team-name{ font-size: 15px; }
-  .team-meta{ gap: 6px; font-size: 10px; }
-
-  .input-box{
-    margin-top: 0;
-    padding: 6px;
-  }
-  .display{
-    height: 36px;
-    font-size: 22px;
-    letter-spacing: 2px;
-  }
-
-  /* Keypad: 3 columns x 4 rows, each row takes equal space */
-  .keypad{
-    margin-top: 0;
-    gap: 6px;
-    min-height: 0;
-    height: 100%;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(4, 1fr);
-  }
-
-  .key{
-    min-height: 0 !important;
-    height: 100%;
-    font-size: 18px;
-    border-radius: 10px;
-    padding: 0;
-  }
-
-  .hint{ display:none; }
-
-  .btn{
-    padding: 8px 10px;
-    font-size: 13px;
-    border-radius: 12px;
-  }
-}
-
-/* Extra-small phones */
-@media (max-width: 420px) {
-  .question { font-size: 30px; }
-  .key { min-height: 58px; font-size: 24px; }
-  .display { font-size: 32px; }
-  .team-name { font-size: 18px; }
 }
