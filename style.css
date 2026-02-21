@@ -9,13 +9,17 @@
   --bad: #ff5a5a;
   --warn: #ffcc66;
   --border: rgba(255,255,255,.12);
+
+  --gap: 12px;
+  --radius: 16px;
 }
 
 *{ box-sizing:border-box; }
 html,body{ height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
 body{ overflow:hidden; }
+button { -webkit-tap-highlight-color: transparent; }
 
-#app{ height:100%; display:flex; flex-direction:column; }
+#app{ height:100%; display:flex; flex-direction:column; min-height: 0; }
 
 .topbar{
   display:flex; align-items:center; justify-content:space-between;
@@ -33,20 +37,21 @@ body{ overflow:hidden; }
   flex:1;
   display:grid;
   grid-template-columns: 1fr 1.8fr 1fr;
-  gap:12px;
-  padding:12px;
+  gap: var(--gap);
+  padding: var(--gap);
   height: calc(100% - 60px);
+  min-height: 0;
 }
 
-.team{
+/* ---- Shared cards ---- */
+.team, .arena{
   background: var(--panel);
   border:1px solid var(--border);
-  border-radius:16px;
+  border-radius: var(--radius);
   padding:14px;
   display:flex;
   flex-direction:column;
   min-width: 0;
-  touch-action: manipulation;
   user-select:none;
 }
 
@@ -75,7 +80,7 @@ body{ overflow:hidden; }
   grid-template-columns: repeat(3, 1fr);
   gap:10px;
   flex:1;
-  min-height: 280px;
+  min-height: 0;
 }
 
 .key{
@@ -101,12 +106,6 @@ body{ overflow:hidden; }
 
 .arena{
   position:relative;
-  background: var(--panel);
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:14px;
-  display:flex;
-  flex-direction:column;
   min-width: 0;
 }
 
@@ -162,7 +161,7 @@ body{ overflow:hidden; }
 .btn.danger{ background: rgba(255,90,90,.16); border-color: rgba(255,90,90,.35); }
 .btn.big{ font-size:18px; padding:14px 16px; border-radius:16px; }
 
-.rope-area{ margin-top:14px; flex:1; display:flex; flex-direction:column; }
+.rope-area{ margin-top:14px; flex:1; display:flex; flex-direction:column; min-height: 0; }
 .rope-title{ font-weight:900; color: var(--muted); margin-bottom:8px; }
 
 .rope-track{
@@ -232,4 +231,119 @@ body{ overflow:hidden; }
   font-size:34px;
   font-weight:1000;
   margin-bottom:14px;
+}
+
+/* ============================
+   Mobile portrait / small
+   ============================ */
+@media (max-width: 900px) {
+  body { overflow: auto; }
+  #app { height: auto; min-height: 100%; }
+
+  .topbar{
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+
+  .brand .title { font-size: 16px; }
+  .brand .subtitle { display:none; }
+
+  .layout{
+    height:auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+
+  .arena { order: 1; }
+  .team-left { order: 2; }
+  .team-right { order: 3; }
+
+  .question { font-size: 34px; }
+  .rope-track { min-height: 160px; }
+  .display { height: 52px; font-size: 34px; }
+  .key { min-height: 64px; font-size: 26px; border-radius: 14px; }
+
+  .q-actions{
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .btn { width: 100%; font-size: 16px; padding: 12px 12px; }
+}
+
+/* ============================
+   Phone LANDSCAPE (important):
+   Arena on top, 2 teams bottom side-by-side,
+   and keypads should fit without scrolling.
+   ============================ */
+@media (max-width: 900px) and (orientation: landscape) {
+  body { overflow: hidden; }
+  #app { height: 100%; }
+
+  /* 2 rows: arena (top), teams (bottom) */
+  .layout{
+    height: calc(100vh - 60px);
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    align-content: stretch;
+  }
+
+  .arena{
+    order: 1;
+    grid-column: 1 / span 2;
+    grid-row: 1;
+    padding: 10px;
+  }
+
+  .team-left{
+    order: 2;
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .team-right{
+    order: 3;
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  /* Make arena compact */
+  .question-card{ padding: 10px; }
+  .question{ margin-top: 6px; font-size: 28px; }
+  .rope-area{ margin-top: 10px; }
+  .rope-track{ min-height: 110px; }
+  .rope-meta{ display:none; } /* oszczędzamy wysokość */
+  .q-actions{ margin-top: 8px; }
+  .status{ display:none; } /* oszczędzamy wysokość */
+  #btnNext{ padding: 10px 12px; }
+
+  /* Make teams compact but keep all keys visible */
+  .team{ padding: 10px; }
+  .team-name{ font-size: 16px; }
+  .team-meta{ gap: 8px; font-size: 11px; }
+
+  .input-box{ margin-top: 8px; padding: 8px; }
+  .display{ height: 44px; font-size: 28px; letter-spacing: 2px; }
+
+  .keypad{
+    margin-top: 8px;
+    gap: 6px;
+  }
+
+  /* Key height tuned to fit 4 rows in low-height landscape screens */
+  .key{
+    min-height: clamp(44px, 9.5vh, 56px);
+    font-size: 22px;
+    border-radius: 12px;
+  }
+
+  .hint{ display:none; } /* żeby wszystko weszło */
+}
+
+/* Extra-small phones */
+@media (max-width: 420px) {
+  .question { font-size: 30px; }
+  .key { min-height: 58px; font-size: 24px; }
+  .display { font-size: 32px; }
+  .team-name { font-size: 18px; }
 }

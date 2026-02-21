@@ -3,9 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1220">
   <title>Przeciąganie liny – Matematyka</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
   <div id="app">
     <header class="topbar">
@@ -21,29 +23,6 @@
     </header>
 
     <main class="layout">
-      <!-- LEFT TEAM -->
-      <section class="team team-left" aria-label="Drużyna A">
-        <div class="team-header">
-          <div class="team-name">Drużyna A</div>
-          <div class="team-meta">
-            <span>Kombo: <strong id="comboA">0</strong></span>
-            <span>Ruch: <strong id="lastMoveA">0</strong></span>
-          </div>
-        </div>
-
-        <div class="input-box">
-          <div class="input-label">Wynik</div>
-          <div id="displayA" class="display" role="textbox" aria-label="Wpis drużyny A"></div>
-        </div>
-
-        <div class="keypad" id="keypadA" aria-label="Klawiatura drużyny A"></div>
-
-        <div class="hint">
-          <div>Dotknij cyfr, potem <strong>OK</strong>.</div>
-          <div class="small">⌫ usuwa ostatnią cyfrę</div>
-        </div>
-      </section>
-
       <!-- ARENA -->
       <section class="arena" aria-label="Arena">
         <div class="question-card">
@@ -99,6 +78,29 @@
             <div id="winnerText" class="winner-text">Wygrywa —</div>
             <button id="btnPlayAgain" class="btn big">Graj dalej</button>
           </div>
+        </div>
+      </section>
+
+      <!-- LEFT TEAM -->
+      <section class="team team-left" aria-label="Drużyna A">
+        <div class="team-header">
+          <div class="team-name">Drużyna A</div>
+          <div class="team-meta">
+            <span>Kombo: <strong id="comboA">0</strong></span>
+            <span>Ruch: <strong id="lastMoveA">0</strong></span>
+          </div>
+        </div>
+
+        <div class="input-box">
+          <div class="input-label">Wynik</div>
+          <div id="displayA" class="display" role="textbox" aria-label="Wpis drużyny A"></div>
+        </div>
+
+        <div class="keypad" id="keypadA" aria-label="Klawiatura drużyny A"></div>
+
+        <div class="hint">
+          <div>Dotknij cyfr, potem <strong>OK</strong>.</div>
+          <div class="small">⌫ usuwa ostatnią cyfrę</div>
         </div>
       </section>
 
