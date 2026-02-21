@@ -1,5 +1,5 @@
 // ============================
-// Tug-of-War Math Game (MVP)
+// Tug-of-War Math Game (MVP) + Fullscreen Auto-Fit
 // ============================
 
 const els = {
@@ -24,6 +24,13 @@ const els = {
   lastMoveA: document.getElementById('lastMoveA'),
   lastMoveB: document.getElementById('lastMoveB'),
 };
+
+const stage = document.getElementById('fsStage');
+
+// Design size for "fit to screen" mode.
+// Pick a stable 16:9 baseline that works well on TVs.
+const DESIGN_W = 1920;
+const DESIGN_H = 1080;
 
 const state = {
   ropePos: 0,        // -100 ... +100
@@ -67,6 +74,72 @@ function render() {
   els.timeLeft.textContent = state.timeLeft.toFixed(1);
 }
 
+// ----------------------------
+// Fullscreen auto-fit (contain)
+// ----------------------------
+function getViewportSize() {
+  // visualViewport is more accurate on mobile (esp. Samsung / landscape)
+  const vv = window.visualViewport;
+  const w = vv ? vv.width : window.innerWidth;
+  const h = vv ? vv.height : window.innerHeight;
+  return { w, h };
+}
+
+function applyFitScale() {
+  if (!stage.classList.contains('fit')) return;
+
+  const { w, h } = getViewportSize();
+
+  const scale = Math.min(w / DESIGN_W, h / DESIGN_H);
+  const scaledW = DESIGN_W * scale;
+  const scaledH = DESIGN_H * scale;
+
+  const x = Math.max(0, (w - scaledW) / 2);
+  const y = Math.max(0, (h - scaledH) / 2);
+
+  stage.style.setProperty('--design-w', `${DESIGN_W}px`);
+  stage.style.setProperty('--design-h', `${DESIGN_H}px`);
+  stage.style.setProperty('--fit-scale', `${scale}`);
+  stage.style.setProperty('--fit-x', `${x}px`);
+  stage.style.setProperty('--fit-y', `${y}px`);
+}
+
+async function toggleFullscreen() {
+  try {
+    if (!document.fullscreenElement) {
+      await stage.requestFullscreen();
+      stage.classList.add('fit');
+      // Apply after fullscreen settles
+      setTimeout(applyFitScale, 50);
+    } else {
+      await document.exitFullscreen();
+      stage.classList.remove('fit');
+      stage.style.removeProperty('--fit-scale');
+      stage.style.removeProperty('--fit-x');
+      stage.style.removeProperty('--fit-y');
+    }
+  } catch {
+    setStatus('Nie udało się włączyć pełnego ekranu (polityka przeglądarki).', 'warn');
+  }
+}
+
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement) {
+    stage.classList.remove('fit');
+  } else {
+    stage.classList.add('fit');
+  }
+  setTimeout(applyFitScale, 50);
+});
+
+window.addEventListener('resize', applyFitScale);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', applyFitScale);
+}
+
+// ----------------------------
+// Keypads
+// ----------------------------
 function buildKeypad(container, team) {
   const keys = [
     '1','2','3',
@@ -85,7 +158,6 @@ function buildKeypad(container, team) {
     if (k === 'OK') btn.classList.add('ok');
     if (k === '⌫') btn.classList.add('back');
 
-    // pointerdown works for touch + mouse
     btn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       onKey(team, k);
@@ -117,6 +189,9 @@ function onKey(team, key) {
   render();
 }
 
+// ----------------------------
+// Timer & Questions
+// ----------------------------
 function startTimer() {
   stopTimer();
   state.timeLeft = state.roundSeconds;
@@ -323,19 +398,9 @@ function resetGame() {
   nextQuestion();
 }
 
-async function toggleFullscreen() {
-  try {
-    if (!document.fullscreenElement) {
-      await document.documentElement.requestFullscreen();
-    } else {
-      await document.exitFullscreen();
-    }
-  } catch {
-    setStatus('Nie udało się włączyć pełnego ekranu (polityka przeglądarki).', 'warn');
-  }
-}
-
+// ----------------------------
 // Wire up
+// ----------------------------
 buildKeypad(els.keypadA, 'A');
 buildKeypad(els.keypadB, 'B');
 
