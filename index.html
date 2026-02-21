@@ -3,7 +3,6 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b1220">
   <title>Przeciąganie liny – Matematyka</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -11,94 +10,58 @@
 <body>
 <div id="app">
 
-  <header class="topbar">
-    <div class="brand">
-      <div class="title">Przeciąganie liny – Matematyka</div>
-      <div class="sub">Dotyk • TV • Telefon • Szybkość = siła</div>
+<header class="topbar">
+  <div class="title">Przeciąganie liny – Matematyka</div>
+
+  <div class="controls">
+    <button id="btnMode" class="btn">Tryb: 2 drużyny</button>
+
+    <select id="difficulty">
+      <option value="1">Poziom 1</option>
+      <option value="2">Poziom 2</option>
+      <option value="3" selected>Poziom 3</option>
+      <option value="4">Poziom 4</option>
+      <option value="5">Poziom 5</option>
+    </select>
+
+    <select id="cpuSpeed">
+      <option value="very_slow">CPU: Bardzo wolny</option>
+      <option value="slow" selected>CPU: Wolny</option>
+      <option value="normal">CPU: Normalny</option>
+      <option value="fast">CPU: Szybki</option>
+    </select>
+
+    <button id="btnFullscreen" class="btn">Pełny ekran</button>
+    <button id="btnReset" class="btn danger">Reset</button>
+  </div>
+</header>
+
+<main class="layout">
+
+  <section class="team">
+    <h2>Drużyna A</h2>
+    <div id="displayA" class="display">—</div>
+    <div id="keypadA" class="keypad"></div>
+  </section>
+
+  <section class="arena">
+    <div id="question" class="question">—</div>
+
+    <div class="ropeTrack">
+      <div class="centerLine"></div>
+      <div id="rope" class="rope">
+        <div class="flag">🏳️</div>
+      </div>
     </div>
+  </section>
 
-    <div class="actions">
-      <button id="btnMode" class="btn ghost">Tryb: 2 drużyny</button>
+  <section class="team" id="teamB">
+    <h2 id="teamBTitle">Drużyna B</h2>
+    <div id="displayB" class="display">—</div>
+    <div id="keypadB" class="keypad"></div>
+  </section>
 
-      <label class="selectWrap" title="Poziom trudności zadań">
-        <span>Poziom</span>
-        <select id="difficulty">
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3" selected>3</option>
-          <option value="4">4</option>
-          <option value="5">5</option>
-        </select>
-      </label>
-
-      <label class="selectWrap" title="Szybkość robota (czas odpowiedzi)">
-        <span>CPU</span>
-        <select id="cpuSpeed">
-          <option value="very_slow">Bardzo wolny</option>
-          <option value="slow" selected>Wolny</option>
-          <option value="normal">Normalny</option>
-          <option value="fast">Szybki</option>
-        </select>
-      </label>
-
-      <button id="btnFullscreen" class="btn ghost">Pełny ekran</button>
-      <button id="btnReset" class="btn danger">Reset</button>
-    </div>
-  </header>
-
-  <main class="layout">
-    <!-- ARENA -->
-    <section class="arena" aria-label="Arena">
-      <div class="questionCard">
-        <div class="question" id="question">—</div>
-        <div class="status" id="status">Wpisz wynik i kliknij OK.</div>
-      </div>
-
-      <div class="ropeTrack" aria-label="Lina">
-        <div class="centerLine"></div>
-        <div class="winLine left"></div>
-        <div class="winLine right"></div>
-
-        <div id="rope" class="rope">
-          <div class="flag">🏳️</div>
-        </div>
-      </div>
-
-      <div class="meta">
-        Pozycja: <strong id="ropePos">0</strong> (A ← -100 … +100 → B)
-      </div>
-
-      <div id="winnerOverlay" class="winner hidden" aria-hidden="true">
-        <div class="winnerCard">
-          <div id="winnerText" class="winnerText">Wygrywa —</div>
-          <button id="btnPlayAgain" class="btn big">Graj dalej</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- TEAM A -->
-    <section class="team" aria-label="Drużyna A">
-      <div class="teamHead">
-        <h2>Drużyna A</h2>
-        <div class="mini">Kombo: <strong id="comboA">0</strong></div>
-      </div>
-
-      <div id="displayA" class="display">—</div>
-      <div id="keypadA" class="keypad"></div>
-    </section>
-
-    <!-- TEAM B -->
-    <section class="team" id="teamB" aria-label="Drużyna B">
-      <div class="teamHead">
-        <h2 id="teamBTitle">Drużyna B</h2>
-        <div class="mini">Kombo: <strong id="comboB">0</strong></div>
-      </div>
-
-      <div id="displayB" class="display">—</div>
-      <div id="keypadB" class="keypad"></div>
-    </section>
-
-  </main>
+</main>
 </div>
 
 <script src="main.js"></script>
