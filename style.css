@@ -272,72 +272,96 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 /* ============================
-   Phone LANDSCAPE (important):
-   Arena on top, 2 teams bottom side-by-side,
-   and keypads should fit without scrolling.
+   Phone LANDSCAPE (fixed):
+   Arena on top, teams bottom side-by-side,
+   keypads always fully visible (4x3 grid rows).
    ============================ */
 @media (max-width: 900px) and (orientation: landscape) {
   body { overflow: hidden; }
   #app { height: 100%; }
 
-  /* 2 rows: arena (top), teams (bottom) */
+  .topbar{
+    padding: 8px 12px;
+  }
+  .brand .subtitle { display:none; }
+
   .layout{
-    height: calc(100vh - 60px);
+    height: calc(100dvh - 52px);
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto 1fr;
-    align-content: stretch;
+    gap: 8px;
+    padding: 8px;
+    min-height: 0;
   }
 
   .arena{
-    order: 1;
     grid-column: 1 / span 2;
     grid-row: 1;
-    padding: 10px;
+    padding: 8px;
   }
 
-  .team-left{
-    order: 2;
-    grid-column: 1;
-    grid-row: 2;
-  }
+  .team-left{ grid-column: 1; grid-row: 2; }
+  .team-right{ grid-column: 2; grid-row: 2; }
 
-  .team-right{
-    order: 3;
-    grid-column: 2;
-    grid-row: 2;
-  }
+  /* Compact arena */
+  .question-card{ padding: 8px; }
+  .q-top{ font-size: 11px; }
+  .question{ margin-top: 4px; font-size: 24px; }
+  .q-actions{ margin-top: 6px; }
+  .status{ display:none; }
+  .rope-area{ margin-top: 8px; }
+  .rope-track{ min-height: 92px; }
+  .rope-meta{ display:none; }
 
-  /* Make arena compact */
-  .question-card{ padding: 10px; }
-  .question{ margin-top: 6px; font-size: 28px; }
-  .rope-area{ margin-top: 10px; }
-  .rope-track{ min-height: 110px; }
-  .rope-meta{ display:none; } /* oszczędzamy wysokość */
-  .q-actions{ margin-top: 8px; }
-  .status{ display:none; } /* oszczędzamy wysokość */
-  #btnNext{ padding: 10px 12px; }
-
-  /* Make teams compact but keep all keys visible */
-  .team{ padding: 10px; }
-  .team-name{ font-size: 16px; }
-  .team-meta{ gap: 8px; font-size: 11px; }
-
-  .input-box{ margin-top: 8px; padding: 8px; }
-  .display{ height: 44px; font-size: 28px; letter-spacing: 2px; }
-
-  .keypad{
-    margin-top: 8px;
+  /* Team panels become a 3-row grid: header, input, keypad */
+  .team{
+    padding: 8px;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto auto 1fr;
     gap: 6px;
+    overflow: hidden;
   }
 
-  /* Key height tuned to fit 4 rows in low-height landscape screens */
-  .key{
-    min-height: clamp(44px, 9.5vh, 56px);
+  .team-name{ font-size: 15px; }
+  .team-meta{ gap: 6px; font-size: 10px; }
+
+  .input-box{
+    margin-top: 0;
+    padding: 6px;
+  }
+  .display{
+    height: 36px;
     font-size: 22px;
+    letter-spacing: 2px;
+  }
+
+  /* Keypad: 3 columns x 4 rows, each row takes equal space */
+  .keypad{
+    margin-top: 0;
+    gap: 6px;
+    min-height: 0;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+  }
+
+  .key{
+    min-height: 0 !important;
+    height: 100%;
+    font-size: 18px;
+    border-radius: 10px;
+    padding: 0;
+  }
+
+  .hint{ display:none; }
+
+  .btn{
+    padding: 8px 10px;
+    font-size: 13px;
     border-radius: 12px;
   }
-
-  .hint{ display:none; } /* żeby wszystko weszło */
 }
 
 /* Extra-small phones */
