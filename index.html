@@ -3,65 +3,136 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Przeciąganie liny – Matematyka</title>
+  <meta name="theme-color" content="#0b1220">
+  <title>Matematyczne Starcia – 2 gry</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
 <div id="app">
 
-<header class="topbar">
-  <div class="title">Przeciąganie liny – Matematyka</div>
-
-  <div class="controls">
-    <button id="btnMode" class="btn">Tryb: 2 drużyny</button>
-
-    <select id="difficulty">
-      <option value="1">Poziom 1</option>
-      <option value="2">Poziom 2</option>
-      <option value="3" selected>Poziom 3</option>
-      <option value="4">Poziom 4</option>
-      <option value="5">Poziom 5</option>
-    </select>
-
-    <select id="cpuSpeed">
-      <option value="very_slow">CPU: Bardzo wolny</option>
-      <option value="slow" selected>CPU: Wolny</option>
-      <option value="normal">CPU: Normalny</option>
-      <option value="fast">CPU: Szybki</option>
-    </select>
-
-    <button id="btnFullscreen" class="btn">Pełny ekran</button>
-    <button id="btnReset" class="btn danger">Reset</button>
-  </div>
-</header>
-
-<main class="layout">
-
-  <section class="team">
-    <h2>Drużyna A</h2>
-    <div id="displayA" class="display">—</div>
-    <div id="keypadA" class="keypad"></div>
-  </section>
-
-  <section class="arena">
-    <div id="question" class="question">—</div>
-
-    <div class="ropeTrack">
-      <div class="centerLine"></div>
-      <div id="rope" class="rope">
-        <div class="flag">🏳️</div>
-      </div>
+  <header class="topbar">
+    <div class="brand">
+      <div class="title">Matematyczne Starcia</div>
+      <div class="sub">2 gry: 🪢 Lina + 🥚 Jajka • TV/Telefon • dotyk</div>
     </div>
-  </section>
 
-  <section class="team" id="teamB">
-    <h2 id="teamBTitle">Drużyna B</h2>
-    <div id="displayB" class="display">—</div>
-    <div id="keypadB" class="keypad"></div>
-  </section>
+    <div class="actions">
+      <label class="selectWrap" title="Wybór gry">
+        <span>Gra</span>
+        <select id="board">
+          <option value="tug" selected>🪢 Przeciąganie liny</option>
+          <option value="eggs">🥚 Bitwa na jajka</option>
+        </select>
+      </label>
 
-</main>
+      <button id="btnMode" class="btn ghost">Tryb: 2 drużyny</button>
+
+      <label class="selectWrap" title="Poziom trudności">
+        <span>Poziom</span>
+        <select id="difficulty">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </label>
+
+      <label class="selectWrap" title="Szybkość robota (czas odpowiedzi)">
+        <span>CPU</span>
+        <select id="cpuSpeed">
+          <option value="very_slow">Bardzo wolny</option>
+          <option value="slow" selected>Wolny</option>
+          <option value="normal">Normalny</option>
+          <option value="fast">Szybki</option>
+        </select>
+      </label>
+
+      <button id="btnFullscreen" class="btn ghost">Pełny ekran</button>
+      <button id="btnReset" class="btn danger">Reset</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- TEAM A -->
+    <section class="team" aria-label="Drużyna A">
+      <div class="teamHead">
+        <h2>Drużyna A</h2>
+        <div class="mini">Kombo: <strong id="comboA">0</strong></div>
+      </div>
+
+      <div id="displayA" class="display">—</div>
+      <div id="keypadA" class="keypad"></div>
+    </section>
+
+    <!-- ARENA -->
+    <section class="arena" aria-label="Arena">
+      <div class="questionCard">
+        <div id="question" class="question">—</div>
+        <div id="status" class="status">Wpisz wynik i kliknij OK.</div>
+      </div>
+
+      <!-- Game Stage -->
+      <div id="stage" class="stage" aria-label="Plansza gry">
+        <!-- TUG board -->
+        <div id="boardTug" class="board board-tug">
+          <div class="ropeTrack">
+            <div class="winLine left"></div>
+            <div class="centerLine"></div>
+            <div class="winLine right"></div>
+
+            <div id="rope" class="rope">
+              <div class="flag">🏳️</div>
+            </div>
+          </div>
+          <div class="meta">Pozycja: <strong id="ropePos">0</strong> (A ← -100 … +100 → B)</div>
+        </div>
+
+        <!-- EGGS board -->
+        <div id="boardEggs" class="board board-eggs hidden">
+          <div class="eggsHud">
+            <div class="hpBox">
+              <div class="hpTitle">A</div>
+              <div id="hpA" class="hearts">❤️❤️❤️❤️❤️</div>
+            </div>
+
+            <div class="hpCenterHint">Poprawna odpowiedź = rzut 🥚</div>
+
+            <div class="hpBox">
+              <div class="hpTitle">B</div>
+              <div id="hpB" class="hearts">❤️❤️❤️❤️❤️</div>
+            </div>
+          </div>
+
+          <div class="eggField">
+            <div class="teamAvatar left" id="avatarA">🙂</div>
+            <div class="teamAvatar right" id="avatarB">🙂</div>
+            <!-- jajka będą generowane dynamicznie -->
+          </div>
+        </div>
+      </div>
+
+      <div id="winnerOverlay" class="winner hidden" aria-hidden="true">
+        <div class="winnerCard">
+          <div id="winnerText" class="winnerText">Wygrywa —</div>
+          <button id="btnPlayAgain" class="btn big">Graj dalej</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEAM B -->
+    <section class="team" id="teamB" aria-label="Drużyna B">
+      <div class="teamHead">
+        <h2 id="teamBTitle">Drużyna B</h2>
+        <div class="mini">Kombo: <strong id="comboB">0</strong></div>
+      </div>
+
+      <div id="displayB" class="display">—</div>
+      <div id="keypadB" class="keypad"></div>
+    </section>
+
+  </main>
 </div>
 
 <script src="main.js"></script>
