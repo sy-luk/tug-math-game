@@ -1,130 +1,494 @@
-const els={
-  question:document.getElementById("question"),
-  rope:document.getElementById("rope"),
-  displayA:document.getElementById("displayA"),
-  displayB:document.getElementById("displayB"),
-  keypadA:document.getElementById("keypadA"),
-  keypadB:document.getElementById("keypadB"),
-  btnReset:document.getElementById("btnReset"),
-  btnFullscreen:document.getElementById("btnFullscreen"),
-  btnMode:document.getElementById("btnMode"),
-  difficulty:document.getElementById("difficulty"),
-  cpuSpeed:document.getElementById("cpuSpeed"),
-  teamB:document.getElementById("teamB"),
-  teamBTitle:document.getElementById("teamBTitle")
+const els = {
+  // top controls
+  board: document.getElementById('board'),
+  btnMode: document.getElementById('btnMode'),
+  difficulty: document.getElementById('difficulty'),
+  cpuSpeed: document.getElementById('cpuSpeed'),
+  btnFullscreen: document.getElementById('btnFullscreen'),
+  btnReset: document.getElementById('btnReset'),
+
+  // arena
+  question: document.getElementById('question'),
+  status: document.getElementById('status'),
+  stage: document.getElementById('stage'),
+  overlay: document.getElementById('winnerOverlay'),
+  winnerText: document.getElementById('winnerText'),
+  btnPlayAgain: document.getElementById('btnPlayAgain'),
+
+  // tug board
+  boardTug: document.getElementById('boardTug'),
+  boardEggs: document.getElementById('boardEggs'),
+  rope: document.getElementById('rope'),
+  ropePos: document.getElementById('ropePos'),
+
+  // eggs board
+  hpA: document.getElementById('hpA'),
+  hpB: document.getElementById('hpB'),
+  eggField: document.querySelector('.eggField'),
+  avatarA: document.getElementById('avatarA'),
+  avatarB: document.getElementById('avatarB'),
+
+  // teams
+  displayA: document.getElementById('displayA'),
+  displayB: document.getElementById('displayB'),
+  keypadA: document.getElementById('keypadA'),
+  keypadB: document.getElementById('keypadB'),
+  teamB: document.getElementById('teamB'),
+  teamBTitle: document.getElementById('teamBTitle'),
+  comboA: document.getElementById('comboA'),
+  comboB: document.getElementById('comboB'),
 };
 
-let state={
-  ropePos:0,
-  answer:0,
-  inputA:"",
-  inputB:"",
-  mode:"teams",
-  aiTimer:null
+const state = {
+  mode: 'teams',   // 'teams' | 'cpu'
+  game: 'tug',     // 'tug' | 'eggs'
+
+  question: null,
+  inputA: '',
+  inputB: '',
+  comboA: 0,
+  comboB: 0,
+  locked: false,
+  ended: false,
+
+  aiTimer: null,
+
+  // tug
+  ropePos: 0, // -100..+100
+
+  // eggs
+  hpA: 5,
+  hpB: 5,
 };
 
-function newQuestion(){
-  const diff=parseInt(els.difficulty.value);
-  const max=diff*30;
-  const a=Math.floor(Math.random()*max)+1;
-  const b=Math.floor(Math.random()*max)+1;
-  state.answer=a+b;
-  els.question.textContent=`${a} + ${b}`;
-  state.inputA="";
-  state.inputB="";
+function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
+function setStatus(msg, kind='muted'){
+  els.status.textContent = msg;
+  els.status.style.color =
+    kind === 'good' ? 'var(--good)' :
+    kind === 'bad'  ? 'var(--bad)'  :
+    kind === 'warn' ? 'var(--warn)' :
+    'var(--muted)';
+}
+
+/* ===== viewport sizing (Samsung-safe) ===== */
+function setViewportVars(){
+  const vv = window.visualViewport;
+  const h = vv ? vv.height : window.innerHeight;
+  document.documentElement.style.setProperty('--vh', (h * 0.01) + 'px');
+
+  const tb = document.querySelector('.topbar');
+  const tbH = tb ? Math.ceil(tb.getBoundingClientRect().height) : 60;
+  document.documentElement.style.setProperty('--topbar-h', tbH + 'px');
+}
+
+/* ===== questions ===== */
+function difficulty(){
+  return parseInt(els.difficulty.value, 10);
+}
+function genQuestion(diff){
+  const rnd = (min,max)=>Math.floor(Math.random()*(max-min+1))+min;
+
+  if(diff === 1){
+    const a=rnd(0,10), b=rnd(0,10);
+    return { text:`${a} + ${b}`, answer:a+b };
+  }
+  if(diff === 2){
+    const op = Math.random()<0.6?'+':'-';
+    let a=rnd(5,30), b=rnd(0,20);
+    if(op==='-' && b>a) [a,b]=[b,a];
+    return { text:`${a} ${op} ${b}`, answer: op==='+'?a+b:a-b };
+  }
+  if(diff === 3){
+    const op = Math.random()<0.55?'+':'-';
+    let a=rnd(10,90), b=rnd(0,50);
+    if(op==='-' && b>a) [a,b]=[b,a];
+    return { text:`${a} ${op} ${b}`, answer: op==='+'?a+b:a-b };
+  }
+  if(diff === 4){
+    if(Math.random()<0.55){
+      const a=rnd(2,9), b=rnd(2,9);
+      return { text:`${a} × ${b}`, answer:a*b };
+    } else {
+      const op=Math.random()<0.5?'+':'-';
+      let a=rnd(20,150), b=rnd(0,80);
+      if(op==='-' && b>a) [a,b]=[b,a];
+      return { text:`${a} ${op} ${b}`, answer: op==='+'?a+b:a-b };
+    }
+  }
+  // diff 5
+  const roll = Math.random();
+  if(roll < 0.45){
+    const a=rnd(3,12), b=rnd(3,12);
+    return { text:`${a} × ${b}`, answer:a*b };
+  } else if(roll < 0.8){
+    const op=Math.random()<0.5?'+':'-';
+    let a=rnd(50,200), b=rnd(10,120);
+    if(op==='-' && b>a) [a,b]=[b,a];
+    return { text:`${a} ${op} ${b}`, answer: op==='+'?a+b:a-b };
+  } else {
+    const a=rnd(10,60), b=rnd(10,60), c=rnd(5,50);
+    return { text:`(${a} + ${b}) - ${c}`, answer:(a+b)-c };
+  }
+}
+
+/* ===== CPU speed (slower) ===== */
+function getCpuProfile() {
+  const map = {
+    very_slow: { min: 5200, max: 13000, correct: 0.75 },
+    slow:      { min: 4200, max: 10000, correct: 0.78 },
+    normal:    { min: 3200, max:  7800, correct: 0.80 },
+    fast:      { min: 2400, max:  6000, correct: 0.82 },
+  };
+  return map[els.cpuSpeed?.value || 'slow'] || map.slow;
+}
+function scaleByDifficulty(diff, prof) {
+  const timeFactor = [1.00, 1.05, 1.10, 1.18, 1.26, 1.35][diff] || 1.18;
+  const correctBonus = [0, 0.00, 0.01, 0.02, 0.03, 0.04][diff] || 0.02;
+
+  return {
+    min: Math.round(prof.min * timeFactor),
+    max: Math.round(prof.max * timeFactor),
+    correct: Math.min(0.90, prof.correct + correctBonus),
+  };
+}
+
+function clearAI(){
+  if(state.aiTimer){
+    clearTimeout(state.aiTimer);
+    state.aiTimer = null;
+  }
+}
+
+function scheduleAI(){
+  clearAI();
+  if(state.mode !== 'cpu' || state.ended) return;
+
+  const diff = difficulty();
+  const prof = scaleByDifficulty(diff, getCpuProfile());
+  const delay = Math.floor(Math.random()*(prof.max - prof.min + 1)) + prof.min;
+
+  // pokaż, że CPU myśli
+  state.inputB = '';
+  renderTeamDisplays();
+  setStatus('🤖 Komputer myśli…', 'warn');
+
+  state.aiTimer = setTimeout(() => {
+    state.aiTimer = null;
+    if(state.ended || state.locked) return;
+
+    const correct = Math.random() < prof.correct;
+    let ans = state.question.answer;
+
+    if(!correct){
+      const delta = (Math.floor(Math.random()*3)+1) * (Math.random()<0.5?1:-1);
+      ans = ans + delta;
+    }
+
+    state.inputB = String(ans);
+    renderTeamDisplays();
+    submit('B', true);
+  }, delay);
+}
+
+/* ===== render ===== */
+function renderTeamDisplays(){
+  els.displayA.textContent = state.inputA || '—';
+  els.displayB.textContent = state.inputB || '—';
+  els.comboA.textContent = String(state.comboA);
+  els.comboB.textContent = String(state.comboB);
+}
+
+function renderTug(){
+  els.ropePos.textContent = String(Math.round(state.ropePos));
+  const offsetPct = (state.ropePos / 100) * 40; // symetrycznie
+  els.rope.style.left = `calc(50% + ${offsetPct}%)`;
+}
+
+function hearts(n){
+  return '❤️'.repeat(Math.max(0,n));
+}
+function renderEggs(){
+  els.hpA.textContent = hearts(state.hpA);
+  els.hpB.textContent = hearts(state.hpB);
+
+  // zmiana buziek przy małym HP
+  els.avatarA.textContent = state.hpA <= 2 ? '😵' : '🙂';
+  els.avatarB.textContent = state.hpB <= 2 ? '😵' : '🙂';
+}
+
+function render(){
+  els.question.textContent = state.question ? state.question.text : '—';
+  renderTeamDisplays();
+  if(state.game === 'tug') renderTug();
+  if(state.game === 'eggs') renderEggs();
+}
+
+/* ===== game switching ===== */
+function applyGameUI(){
+  state.game = els.board.value;
+
+  if(state.game === 'tug'){
+    els.boardTug.classList.remove('hidden');
+    els.boardEggs.classList.add('hidden');
+  } else {
+    els.boardTug.classList.add('hidden');
+    els.boardEggs.classList.remove('hidden');
+  }
+}
+
+/* ===== gameplay actions ===== */
+function nextQuestion(){
+  state.question = genQuestion(difficulty());
+  state.inputA = '';
+  state.inputB = '';
+  state.locked = false;
+
+  setStatus('Wpisz wynik i kliknij OK.');
   render();
   scheduleAI();
 }
 
-function render(){
-  els.displayA.textContent=state.inputA||"—";
-  els.displayB.textContent=state.mode==="cpu"?"🤖":(state.inputB||"—");
-  const offset=(state.ropePos/100)*40;
-  els.rope.style.left=`calc(50% + ${offset}%)`;
+function endGame(winner){
+  state.ended = true;
+  clearAI();
+  els.overlay.classList.remove('hidden');
+  els.overlay.setAttribute('aria-hidden','false');
+  els.winnerText.textContent = `Wygrywa ${winner}! 🎉`;
 }
 
-function move(team){
-  if(team==="A") state.ropePos-=10;
-  else state.ropePos+=10;
-  state.ropePos=Math.max(-100,Math.min(100,state.ropePos));
+function tugOnCorrect(team){
+  const step = 10;
+  state.ropePos += (team === 'A') ? -step : step;
+  state.ropePos = clamp(state.ropePos, -100, 100);
+  renderTug();
+
+  if(state.ropePos <= -100) endGame('Drużyna A');
+  if(state.ropePos >= 100) endGame(state.mode === 'cpu' ? 'Komputer (Drużyna B)' : 'Drużyna B');
+}
+
+function throwEgg(fromTeam){
+  // fromTeam 'A' throws to B, 'B' throws to A
+  const field = els.eggField;
+  const rect = field.getBoundingClientRect();
+
+  const startX = fromTeam === 'A' ? 70 : rect.width - 70;
+  const endX   = fromTeam === 'A' ? rect.width - 70 : 70;
+
+  const startY = rect.height * 0.50;
+  const endY   = rect.height * 0.50;
+
+  const egg = document.createElement('div');
+  egg.className = 'egg';
+  egg.textContent = '🥚';
+  egg.style.left = `${startX}px`;
+  egg.style.top  = `${startY}px`;
+  field.appendChild(egg);
+
+  const anim = egg.animate([
+    { transform: 'translate(-50%,-50%) scale(1)', left: `${startX}px`, top: `${startY}px`, opacity: 1 },
+    { transform: 'translate(-50%,-50%) scale(1.1)', left: `${(startX+endX)/2}px`, top: `${startY - rect.height*0.25}px`, opacity: 1 },
+    { transform: 'translate(-50%,-50%) scale(1)', left: `${endX}px`, top: `${endY}px`, opacity: 1 },
+  ], { duration: 650, easing: 'ease-in-out' });
+
+  anim.onfinish = () => {
+    egg.remove();
+
+    // splash
+    const splash = document.createElement('div');
+    splash.className = 'splash';
+    splash.textContent = '💥';
+    splash.style.left = `${endX}px`;
+    splash.style.top  = `${endY}px`;
+    field.appendChild(splash);
+
+    splash.animate([
+      { opacity: 0, transform: 'translate(-50%,-50%) scale(.8)' },
+      { opacity: 1, transform: 'translate(-50%,-50%) scale(1.2)' },
+      { opacity: 0, transform: 'translate(-50%,-50%) scale(1.6)' },
+    ], { duration: 420, easing: 'ease-out' }).onfinish = () => splash.remove();
+  };
+}
+
+function eggsOnCorrect(team){
+  // correct answer => hit opponent
+  if(team === 'A'){
+    throwEgg('A');
+    state.hpB -= 1;
+    state.hpB = clamp(state.hpB, 0, 5);
+  } else {
+    throwEgg('B');
+    state.hpA -= 1;
+    state.hpA = clamp(state.hpA, 0, 5);
+  }
+
+  renderEggs();
+
+  if(state.hpA <= 0) endGame(state.mode === 'cpu' ? 'Komputer (Drużyna B)' : 'Drużyna B');
+  if(state.hpB <= 0) endGame('Drużyna A');
+}
+
+function submit(team, fromCpu=false){
+  if(state.ended || state.locked) return;
+
+  // if A answers in cpu mode, cancel current AI
+  if(state.mode === 'cpu' && team === 'A') clearAI();
+
+  const value = Number(team === 'A' ? state.inputA : state.inputB);
+  if(!Number.isFinite(value)){
+    if(!fromCpu) setStatus('To nie jest liczba.', 'bad');
+    return;
+  }
+
+  state.locked = true;
+
+  const correct = value === state.question.answer;
+
+  if(correct){
+    if(team === 'A'){ state.comboA += 1; state.comboB = 0; }
+    else { state.comboB += 1; state.comboA = 0; }
+
+    setStatus(fromCpu ? '🤖 CPU: poprawnie!' : '✅ Dobrze!', 'good');
+
+    if(state.game === 'tug') tugOnCorrect(team);
+    if(state.game === 'eggs') eggsOnCorrect(team);
+
+  } else {
+    if(team === 'A') state.comboA = 0;
+    else state.comboB = 0;
+
+    setStatus(fromCpu ? '🤖 CPU: źle!' : `❌ Źle. Poprawne: ${state.question.answer}`, 'bad');
+    renderTeamDisplays();
+  }
+
+  setTimeout(() => {
+    state.locked = false;
+    if(!state.ended) nextQuestion();
+  }, correct ? 450 : 650);
+}
+
+function resetGame(){
+  clearAI();
+  state.ended = false;
+  state.locked = false;
+
+  state.inputA = '';
+  state.inputB = '';
+  state.comboA = 0;
+  state.comboB = 0;
+
+  // reset tug
+  state.ropePos = 0;
+
+  // reset eggs
+  state.hpA = 5;
+  state.hpB = 5;
+
+  els.overlay.classList.add('hidden');
+  els.overlay.setAttribute('aria-hidden','true');
+
+  applyGameUI();
+  nextQuestion();
   render();
 }
 
-function submit(team){
-  const value=Number(team==="A"?state.inputA:state.inputB);
-  if(value===state.answer) move(team);
-  newQuestion();
+function applyModeUI(){
+  if(state.mode === 'cpu'){
+    els.btnMode.textContent = 'Tryb: vs CPU';
+    els.teamB.classList.add('disabled');
+    els.teamBTitle.textContent = 'Komputer 🤖';
+    setStatus('Tryb CPU: grasz przeciw komputerowi.', 'warn');
+  } else {
+    els.btnMode.textContent = 'Tryb: 2 drużyny';
+    els.teamB.classList.remove('disabled');
+    els.teamBTitle.textContent = 'Drużyna B';
+    setStatus('Tryb 2 drużyny: obie strony odpowiadają.', 'muted');
+  }
+  render();
+  scheduleAI();
 }
 
-function getCpuDelay(){
-  const speed=els.cpuSpeed.value;
-  if(speed==="very_slow") return [5000,12000];
-  if(speed==="slow") return [4000,9000];
-  if(speed==="normal") return [3000,7000];
-  if(speed==="fast") return [2000,5000];
-  return [4000,9000];
-}
+/* ===== keypad ===== */
+function buildKeypad(container, team){
+  const keys = ['1','2','3','4','5','6','7','8','9','⌫','0','OK'];
+  container.innerHTML = '';
 
-function scheduleAI(){
-  if(state.mode!=="cpu") return;
-  clearTimeout(state.aiTimer);
-  const [min,max]=getCpuDelay();
-  const delay=Math.floor(Math.random()*(max-min))+min;
-  state.aiTimer=setTimeout(()=>{
-    state.inputB=state.answer.toString();
-    submit("B");
-  },delay);
-}
+  keys.forEach(k => {
+    const b = document.createElement('button');
+    b.className = 'key';
+    b.type = 'button';
+    b.textContent = k;
+    if(k === 'OK') b.classList.add('ok');
+    if(k === '⌫') b.classList.add('back');
 
-function buildKeypad(container,team){
-  const keys=["1","2","3","4","5","6","7","8","9","⌫","0","OK"];
-  keys.forEach(k=>{
-    const btn=document.createElement("button");
-    btn.className="key";
-    btn.textContent=k;
-    btn.onclick=()=>{
-      if(state.mode==="cpu"&&team==="B") return;
-      if(k==="⌫"){
-        if(team==="A") state.inputA=state.inputA.slice(0,-1);
-        else state.inputB=state.inputB.slice(0,-1);
-      }else if(k==="OK"){
-        submit(team);
-      }else{
-        if(team==="A") state.inputA+=k;
-        else state.inputB+=k;
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if(state.ended || state.locked) return;
+      if(state.mode === 'cpu' && team === 'B') return;
+
+      if(k === '⌫'){
+        if(team === 'A') state.inputA = state.inputA.slice(0,-1);
+        else state.inputB = state.inputB.slice(0,-1);
+      } else if(k === 'OK'){
+        submit(team, false);
+        return;
+      } else {
+        if(team === 'A' && state.inputA.length < 4) state.inputA += k;
+        if(team === 'B' && state.inputB.length < 4) state.inputB += k;
       }
-      render();
-    };
-    container.appendChild(btn);
+      renderTeamDisplays();
+    });
+
+    container.appendChild(b);
   });
 }
 
-function toggleMode(){
-  state.mode=state.mode==="teams"?"cpu":"teams";
-  if(state.mode==="cpu"){
-    els.btnMode.textContent="Tryb: vs CPU";
-    els.teamB.classList.add("disabled");
-    els.teamBTitle.textContent="Komputer 🤖";
-  }else{
-    els.btnMode.textContent="Tryb: 2 drużyny";
-    els.teamB.classList.remove("disabled");
-    els.teamBTitle.textContent="Drużyna B";
+/* ===== fullscreen ===== */
+async function toggleFullscreen(){
+  try{
+    if(!document.fullscreenElement){
+      await document.documentElement.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
+  } catch {
+    // ignore
+  } finally {
+    setTimeout(setViewportVars, 50);
   }
-  newQuestion();
 }
 
-els.btnReset.onclick=()=>{state.ropePos=0;newQuestion();};
-els.btnFullscreen.onclick=()=>{
-  if(!document.fullscreenElement)
-    document.documentElement.requestFullscreen();
-  else document.exitFullscreen();
-};
-els.btnMode.onclick=toggleMode;
-els.difficulty.onchange=newQuestion;
-els.cpuSpeed.onchange=scheduleAI;
+/* ===== wire up ===== */
+buildKeypad(els.keypadA, 'A');
+buildKeypad(els.keypadB, 'B');
 
-buildKeypad(els.keypadA,"A");
-buildKeypad(els.keypadB,"B");
+els.btnReset.addEventListener('pointerdown', (e)=>{ e.preventDefault(); resetGame(); });
+els.btnPlayAgain.addEventListener('pointerdown', (e)=>{ e.preventDefault(); resetGame(); });
 
-newQuestion();
-render();
+els.btnFullscreen.addEventListener('pointerdown', (e)=>{ e.preventDefault(); toggleFullscreen(); });
+
+els.btnMode.addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  state.mode = (state.mode === 'cpu') ? 'teams' : 'cpu';
+  applyModeUI();
+  resetGame();
+});
+
+els.difficulty.addEventListener('change', ()=> resetGame());
+els.cpuSpeed.addEventListener('change', ()=> scheduleAI());
+
+els.board.addEventListener('change', ()=> resetGame());
+
+document.addEventListener('fullscreenchange', ()=> setTimeout(setViewportVars, 50));
+window.addEventListener('resize', setViewportVars);
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', setViewportVars);
+  window.visualViewport.addEventListener('scroll', setViewportVars);
+}
+
+/* start */
+setViewportVars();
+applyGameUI();
+applyModeUI();
+resetGame();
