@@ -1,0 +1,154 @@
+:root{
+  --vh: 1vh;
+  --topbar-h: 60px;
+}
+
+*{box-sizing:border-box}
+html,body{
+  margin:0;
+  height:100%;
+  font-family:system-ui;
+  background:#0b1220;
+  color:white;
+}
+
+#app{
+  height:100%;
+  display:flex;
+  flex-direction:column;
+}
+
+/* TOPBAR */
+
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 16px;
+  background:#111c33;
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+}
+
+.btn{
+  padding:8px 12px;
+  border-radius:10px;
+  border:1px solid #355;
+  background:#223;
+  color:white;
+  font-weight:bold;
+}
+
+.btn.ghost{background:#1a253f;}
+.btn.danger{background:#402;}
+
+/* LAYOUT */
+
+.layout{
+  flex:1;
+  display:grid;
+  grid-template-columns:1fr 1.5fr 1fr;
+  gap:12px;
+  padding:12px;
+
+  height:calc((var(--vh)*100) - var(--topbar-h));
+}
+
+/* ARENA */
+
+.arena{
+  background:#111c33;
+  border-radius:16px;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+}
+
+.question{
+  font-size:42px;
+  text-align:center;
+  font-weight:900;
+}
+
+.ropeTrack{
+  flex:1;
+  margin-top:20px;
+  position:relative;
+  background:#0e172a;
+  border-radius:16px;
+}
+
+.centerLine{
+  position:absolute;
+  left:50%;
+  top:0;
+  bottom:0;
+  width:4px;
+  background:#345;
+}
+
+.rope{
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:60%;
+  height:12px;
+  transform:translate(-50%,-50%);
+  background:white;
+  border-radius:999px;
+}
+
+/* TEAM */
+
+.team{
+  background:#111c33;
+  border-radius:16px;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+}
+
+.team.disabled{
+  opacity:0.5;
+  pointer-events:none;
+}
+
+.display{
+  font-size:36px;
+  text-align:center;
+  margin:10px 0;
+}
+
+.keypad{
+  flex:1;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  grid-template-rows:repeat(4,1fr);
+  gap:8px;
+}
+
+.key{
+  font-size:24px;
+  border-radius:12px;
+  border:none;
+  background:#223;
+  color:white;
+  font-weight:bold;
+}
+
+/* MOBILE LANDSCAPE */
+
+@media (max-width:900px) and (orientation:landscape){
+
+  .layout{
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto 1fr;
+  }
+
+  .arena{
+    grid-column:1 / span 2;
+  }
+}
