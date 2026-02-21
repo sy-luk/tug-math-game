@@ -5,6 +5,7 @@ const els = {
   ropePos: document.getElementById('ropePos'),
 
   difficulty: document.getElementById('difficulty'),
+  cpuSpeed: document.getElementById('cpuSpeed'),
 
   displayA: document.getElementById('displayA'),
   displayB: document.getElementById('displayB'),
@@ -45,6 +46,7 @@ function setStatus(msg){
   els.status.textContent = msg;
 }
 
+/* ---------- Fullscreen / viewport sizing (Samsung-safe) ---------- */
 function setViewportVars(){
   const vv = window.visualViewport;
   const h = vv ? vv.height : window.innerHeight;
@@ -59,6 +61,7 @@ function difficulty(){
   return parseInt(els.difficulty.value, 10);
 }
 
+/* ---------- Question generator ---------- */
 function genQuestion(diff){
   const rnd = (min,max)=>Math.floor(Math.random()*(max-min+1))+min;
 
@@ -105,6 +108,32 @@ function genQuestion(diff){
   }
 }
 
+/* ---------- CPU speed profiles ---------- */
+function getCpuProfile() {
+  // bazowe czasy w ms (przed skalowaniem trudnością)
+  // "slow" jest default
+  const map = {
+    very_slow: { min: 2500, max: 6500, correct: 0.76 },
+    slow:      { min: 2000, max: 5200, correct: 0.78 },
+    normal:    { min: 1400, max: 3800, correct: 0.80 },
+    fast:      { min: 900,  max: 2600, correct: 0.82 },
+  };
+  return map[els.cpuSpeed?.value || 'slow'] || map.slow;
+}
+
+function scaleByDifficulty(diff, baseMin, baseMax, baseCorrect) {
+  // Im trudniej, tym trochę wolniej + minimalnie lepsza dokładność (ale nie perfekcyjna)
+  const timeFactor = [1.00, 1.00, 1.05, 1.10, 1.15, 1.20][diff] || 1.10;
+  const correctBonus = [0, 0.00, 0.01, 0.02, 0.03, 0.04][diff] || 0.02;
+
+  return {
+    min: Math.round(baseMin * timeFactor),
+    max: Math.round(baseMax * timeFactor),
+    correct: Math.min(0.92, baseCorrect + correctBonus),
+  };
+}
+
+/* ---------- AI scheduling ---------- */
 function clearAI(){
   if(state.aiTimer){
     clearTimeout(state.aiTimer);
@@ -116,19 +145,17 @@ function scheduleAI(){
   clearAI();
   if(state.mode !== 'cpu' || state.ended) return;
 
-  // CPU: opóźnienie i dokładność zależne od poziomu
   const diff = difficulty();
-  const delayMin = [0, 1200, 1100, 1000, 1100, 1200][diff];
-  const delayMax = [0, 4200, 4000, 3600, 4200, 4600][diff];
-  const correctChance = [0, 0.70, 0.73, 0.76, 0.79, 0.82][diff];
+  const prof = getCpuProfile();
+  const scaled = scaleByDifficulty(diff, prof.min, prof.max, prof.correct);
 
-  const delay = Math.floor(Math.random()*(delayMax-delayMin+1))+delayMin;
+  const delay = Math.floor(Math.random()*(scaled.max - scaled.min + 1)) + scaled.min;
 
   state.aiTimer = setTimeout(() => {
     state.aiTimer = null;
     if(state.ended || state.locked) return;
 
-    const correct = Math.random() < correctChance;
+    const correct = Math.random() < scaled.correct;
     let ans = state.question.answer;
 
     if(!correct){
@@ -139,11 +166,11 @@ function scheduleAI(){
     state.inputB = String(ans);
     render();
 
-    // CPU "naciska OK"
-    submit('B', true);
+    submit('B', true); // CPU presses OK
   }, delay);
 }
 
+/* ---------- UI / game flow ---------- */
 function render(){
   els.question.textContent = state.question ? state.question.text : '—';
   els.displayA.textContent = state.inputA || '—';
@@ -163,7 +190,6 @@ function nextQuestion(){
   state.inputB = '';
   state.locked = false;
   setStatus('Wpisz wynik i kliknij OK.');
-
   render();
   scheduleAI();
 }
@@ -180,7 +206,7 @@ function move(team, step){
 function submit(team, fromCpu=false){
   if(state.ended || state.locked) return;
 
-  // jeśli A odpowie w CPU mode, anuluj aktualne "myślenie" CPU dla tego pytania
+  // Jeśli A odpowie w CPU mode, anuluj bieżące "myślenie" CPU dla tego pytania
   if(state.mode === 'cpu' && team === 'A') clearAI();
 
   const value = Number(team === 'A' ? state.inputA : state.inputB);
@@ -195,21 +221,19 @@ function submit(team, fromCpu=false){
   const step = correct ? 10 : 0;
 
   if(correct){
-    if(team === 'A'){
-      state.comboA += 1; state.comboB = 0;
-    } else {
-      state.comboB += 1; state.comboA = 0;
-    }
+    if(team === 'A'){ state.comboA += 1; state.comboB = 0; }
+    else { state.comboB += 1; state.comboA = 0; }
+
     setStatus(fromCpu ? '🤖 CPU: poprawnie!' : '✅ Dobrze!');
     move(team, step);
   } else {
     if(team === 'A') state.comboA = 0;
     else state.comboB = 0;
+
     setStatus(fromCpu ? '🤖 CPU: źle!' : `❌ Źle. Poprawne: ${state.question.answer}`);
     render();
   }
 
-  // następne pytanie po krótkiej pauzie
   setTimeout(() => {
     state.locked = false;
     if(!state.ended) nextQuestion();
@@ -296,7 +320,7 @@ async function toggleFullscreen(){
       await document.exitFullscreen();
     }
   } catch {
-    // nic – nie każda przeglądarka pozwala
+    // przeglądarka może blokować
   } finally {
     setTimeout(setViewportVars, 50);
   }
@@ -318,8 +342,12 @@ els.btnMode.addEventListener('pointerdown', (e)=>{
   resetGame();
 });
 
-els.difficulty.addEventListener('change', ()=>{
-  resetGame();
+els.difficulty.addEventListener('change', ()=> resetGame());
+
+// ZMIANA: przy zmianie CPU speed od razu wpływa na następne pytanie (i reschedule)
+els.cpuSpeed.addEventListener('change', () => {
+  // tylko ma sens w CPU mode, ale można zmieniać zawsze
+  scheduleAI();
 });
 
 document.addEventListener('fullscreenchange', ()=> setTimeout(setViewportVars, 50));
